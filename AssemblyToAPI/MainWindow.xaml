@@ -7,8 +7,12 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
-        <Button Content="Выбрать DLL" HorizontalAlignment="Center" Margin="0,326,0,0" VerticalAlignment="Top" Height="87" Width="412" Click="Button_Click"/>
         <TextBox x:Name="TextBox" HorizontalAlignment="Center" Margin="0,10,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="780" Height="299"/>
+        <Button Content="Выбрать DLL" HorizontalAlignment="Center" Margin="0,326,0,0" VerticalAlignment="Top" Height="87" Width="412" Click="Button_Click"/>
+        <ComboBox x:Name="ComboBox" Margin="670,326,10,0" VerticalAlignment="Top" Height="23" >
+            <ComboBoxItem Content="API"/>
+            <ComboBoxItem Content="HOOKS"/>
+        </ComboBox>
 
     </Grid>
 </Window>

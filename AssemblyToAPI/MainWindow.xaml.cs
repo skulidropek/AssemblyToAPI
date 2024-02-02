@@ -1,10 +1,14 @@
 ﻿using System.IO;
 using System.Net;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Windows;
+using Library;
 using Microsoft.Win32;
 using Mono.Cecil;
+using Newtonsoft.Json;
 using Ookii.Dialogs.Wpf;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace AssemblyToAPI
 {
@@ -20,6 +24,14 @@ namespace AssemblyToAPI
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
+            string selectedItem = ComboBox.SelectedItem.ToString();
+
+            if (string.IsNullOrEmpty(selectedItem))
+            {
+                MessageBox.Show("Need to select a combobox");
+                return;
+            }
+
             string path = GetPathOpenFileDialog();
 
             if (string.IsNullOrEmpty(path))
@@ -30,51 +42,18 @@ namespace AssemblyToAPI
 
             string assemblyPath = path;
 
-            var assemblyDefinition = AssemblyDefinition.ReadAssembly(assemblyPath);
-            var sb = new StringBuilder();
-
-            foreach (var type in assemblyDefinition.MainModule.Types)
+            if(selectedItem.Contains("API"))
             {
-                sb.AppendLine($"Class: {type.FullName}");
-                if (type.BaseType != null)
-                {
-                    sb.AppendLine($"Inherits from: {GetFriendlyTypeName(type.BaseType)}");
-                }
-
-                sb.AppendLine("Fields:");
-
-                foreach (var field in type.Fields)
-                {
-                    sb.AppendLine($" {GetFriendlyTypeName(field.FieldType)} {field.Name}");
-                }
-
-                sb.AppendLine("Properties:");
-
-                foreach (var property in type.Properties)
-                {
-                    sb.AppendLine($" {GetFriendlyTypeName(property.PropertyType)} {property.Name}");
-                }
-
-                sb.AppendLine("Methods:");
-
-                foreach (var method in type.Methods)
-                {
-                    string methodSignature = $"{GetFriendlyTypeName(method.ReturnType)} {method.Name}(";
-                    for (int i = 0; i < method.Parameters.Count; i++)
-                    {
-                        var parameter = method.Parameters[i];
-                        methodSignature += $"{GetFriendlyTypeName(parameter.ParameterType)} {parameter.Name}";
-                        if (i < method.Parameters.Count - 1)
-                            methodSignature += ", ";
-                    }
-                    methodSignature += ")";
-                    sb.AppendLine($" {methodSignature}");
-                }
-
-                sb.AppendLine(new string('-', 50));
+                var text = AssemblyDataSerializer.ConvertToText(assemblyPath);
+                TextBox.Text = text;
+                return;
             }
 
-            TextBox.Text = sb.ToString();
+            if(selectedItem.Contains("HOOKS"))
+            {
+                var json = AssemblyDataSerializer.FindHooks(assemblyPath);
+                TextBox.Text = JsonConvert.SerializeObject(json);
+            }
         }
 
         static string GetFriendlyTypeName(TypeReference type)
