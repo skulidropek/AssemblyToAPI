@@ -53,6 +53,7 @@ namespace AssemblyToAPI
             {
                 var json = AssemblyDataSerializer.FindHooks(assemblyPath);
                 TextBox.Text = JsonConvert.SerializeObject(json);
+                return;
             }
         }
 
