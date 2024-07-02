@@ -47,6 +47,7 @@ namespace AssemblyToAPI
                 var text = AssemblyDataSerializer.ConvertToText(assemblyPath);
                 TextBox.Text = text;
                 File.WriteAllText(Path.GetFileName(assemblyPath) + ".txt", text);
+                File.WriteAllText(assemblyPath + ".txt", text);
                 return;
             }
 
@@ -55,6 +56,8 @@ namespace AssemblyToAPI
                 var json = AssemblyDataSerializer.FindHooks(assemblyPath);
                 TextBox.Text = JsonConvert.SerializeObject(json);
                 File.WriteAllText(Path.GetFileName(assemblyPath) + "hooks.json", TextBox.Text);
+                File.WriteAllText(assemblyPath + "hooks.json", TextBox.Text);
+
                 return;
             }
         }

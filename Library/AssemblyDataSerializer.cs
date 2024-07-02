@@ -14,6 +14,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Library
 {
@@ -34,17 +35,28 @@ namespace Library
                 var typeModel = new TypeModel
                 {
                     ClassName = type.FullName,
-                    InheritsFrom = type.BaseType != null ? type.BaseType.GetFriendlyTypeName() : null
+                    InheritsFrom = type.BaseType != null ? type.BaseType.GetFriendlyTypeName() : null,
+                    Accessibility = GetAccessibility(type)
                 };
 
                 foreach (var field in type.Fields)
                 {
-                    typeModel.Fields.Add(new FieldModel { FieldType = field.FieldType.GetFriendlyTypeName(), FieldName = field.Name });
+                    typeModel.Fields.Add(new FieldModel
+                    {
+                        FieldType = field.FieldType.GetFriendlyTypeName(),
+                        FieldName = field.Name,
+                        Accessibility = GetAccessibility(field)
+                    });
                 }
 
                 foreach (var property in type.Properties)
                 {
-                    typeModel.Properties.Add(new PropertyModel { PropertyType = property.PropertyType.GetFriendlyTypeName(), PropertyName = property.Name });
+                    typeModel.Properties.Add(new PropertyModel
+                    {
+                        PropertyType = property.PropertyType.GetFriendlyTypeName(),
+                        PropertyName = property.Name,
+                        Accessibility = GetAccessibility(property)
+                    });
                 }
 
                 foreach (var method in type.Methods)
@@ -52,12 +64,17 @@ namespace Library
                     var methodModel = new MethodModel
                     {
                         MethodReturnType = method.ReturnType.GetFriendlyTypeName(),
-                        MethodName = method.Name
+                        MethodName = method.Name,
+                        Accessibility = GetAccessibility(method)
                     };
 
                     foreach (var parameter in method.Parameters)
                     {
-                        methodModel.Parameters.Add(new ParameterModel { ParameterType = parameter.ParameterType.GetFriendlyTypeName(), ParameterName = parameter.Name });
+                        methodModel.Parameters.Add(new ParameterModel
+                        {
+                            ParameterType = parameter.ParameterType.GetFriendlyTypeName(),
+                            ParameterName = parameter.Name
+                        });
                     }
 
                     typeModel.Methods.Add(methodModel);
@@ -66,7 +83,55 @@ namespace Library
                 assemblyModel.Types.Add(typeModel);
             }
 
+
             return assemblyModel;
+        }
+
+        static string GetAccessibility(TypeDefinition type)
+        {
+            if (type.IsPublic) return "public";
+            if (type.IsNotPublic) return "internal";
+            return "unknown";
+        }
+
+        static string GetAccessibility(FieldDefinition field)
+        {
+            if (field.IsPublic) return "public";
+            if (field.IsPrivate) return "private";
+            if (field.IsFamily) return "protected";
+            if (field.IsAssembly) return "internal";
+            if (field.IsFamilyOrAssembly) return "protected internal";
+            if (field.IsFamilyAndAssembly) return "private protected";
+            return "unknown";
+        }
+
+        static string GetAccessibility(MethodDefinition method)
+        {
+            if (method.IsPublic) return "public";
+            if (method.IsPrivate) return "private";
+            if (method.IsFamily) return "protected";
+            if (method.IsAssembly) return "internal";
+            if (method.IsFamilyOrAssembly) return "protected internal";
+            if (method.IsFamilyAndAssembly) return "private protected";
+            return "unknown";
+        }
+
+        static string GetAccessibility(PropertyDefinition property)
+        {
+            // Определение уровня доступа по методам get и set
+            var getMethod = property.GetMethod;
+            var setMethod = property.SetMethod;
+
+            var getAccessibility = getMethod != null ? GetAccessibility(getMethod) : null;
+            var setAccessibility = setMethod != null ? GetAccessibility(setMethod) : null;
+
+            // Возвращаем более открытый уровень доступа (если один из методов публичный, то свойство публичное)
+            if (getAccessibility == "public" || setAccessibility == "public") return "public";
+            if (getAccessibility == "protected internal" || setAccessibility == "protected internal") return "protected internal";
+            if (getAccessibility == "internal" || setAccessibility == "internal") return "internal";
+            if (getAccessibility == "protected" || setAccessibility == "protected") return "protected";
+            if (getAccessibility == "private protected" || setAccessibility == "private protected") return "private protected";
+            return "private";
         }
 
         public static string ConvertToText(string path)
@@ -85,7 +150,7 @@ namespace Library
         {
             var sb = new StringBuilder();
 
-            foreach (var type in assemblyModel.Types)
+            foreach (var type in assemblyModel.Types.OrderBy(s => s.ClassName).Where(s => !s.ClassName.StartsWith("<")))
             {
                 sb.Append(ConvertToText(type));
             }
@@ -97,53 +162,42 @@ namespace Library
         {
             var sb = new StringBuilder();
 
-            sb.AppendLine($"class: {type.ClassName}");
-            if (!string.IsNullOrEmpty(type.InheritsFrom))
+            sb.AppendLine($"{type.Accessibility} {type.ClassName}{(string.IsNullOrEmpty(type.InheritsFrom) ? "" : " : " + type.InheritsFrom)} {{");
+
+            if (type.Fields.Count == 0 && type.Properties.Count == 0 && type.Methods.Count == 0)
             {
-                sb.AppendLine($"inherits from: {type.InheritsFrom}");
+                return string.Empty;
             }
 
-            if(type.Fields.Count > 0)
+            var body = new StringBuilder();
+
+            foreach (var field in type.Fields)
             {
-                sb.AppendLine("fields:");
-                foreach (var field in type.Fields)
-                {
-                    sb.AppendLine($"{field.FieldType} {field.FieldName}");
-                }
+                body.AppendLine($"{field.Accessibility} {field.FieldType} {field.FieldName}");
             }
 
-            if (type.Properties.Count > 0)
+            foreach (var property in type.Properties)
             {
-                sb.AppendLine("properties:");
-                foreach (var property in type.Properties)
-                {
-                    sb.AppendLine($"{property.PropertyType} {property.PropertyName}");
-                }
+                body.AppendLine($"{property.Accessibility} {property.PropertyType} {property.PropertyName}");
             }
 
-            if(type.Methods.Count > 0)
+            foreach (var method in type.Methods)
             {
-                sb.AppendLine("methods:");
-                foreach (var method in type.Methods)
-                {
-                    var methodSignature = new StringBuilder();
-                    methodSignature.Append($"{method.MethodReturnType} {method.MethodName}(");
-                    for (int i = 0; i < method.Parameters.Count; i++)
-                    {
-                        var parameter = method.Parameters[i];
-                        methodSignature.Append($"{parameter.ParameterType} {parameter.ParameterName}");
-                        if (i < method.Parameters.Count - 1)
-                        {
-                            methodSignature.Append(", ");
-                        }
-                    }
-                    methodSignature.Append(")");
-                    sb.AppendLine($"{methodSignature}");
-                }
+                var methodSignature = $"{method.Accessibility} {method.MethodReturnType} {method.MethodName}({string.Join(", ", method.Parameters.Select(p => $"{p.ParameterType} {p.ParameterName}"))})";
+                
+                if(Regex.IsMatch(methodSignature, @"void .c?ctor\(\)"))
+                    continue;
+
+                body.AppendLine(methodSignature);
             }
 
-            sb.AppendLine(new string('-', 10));
+            if (body.Length == 0)
+            {
+                return string.Empty;
+            }
 
+            sb.Append(body);
+            sb.AppendLine("}");
             return sb.ToString();
         }
 

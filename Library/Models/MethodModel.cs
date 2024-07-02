@@ -4,6 +4,7 @@
     {
         public string MethodReturnType { get; set; }
         public string MethodName { get; set; }
+        public string Accessibility { get; set; }
         public List<ParameterModel> Parameters { get; set; } = new List<ParameterModel>();
     }
 }

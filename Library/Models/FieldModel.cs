@@ -4,5 +4,7 @@
     {
         public string FieldType { get; set; }
         public string FieldName { get; set; }
+
+        public string Accessibility { get; set; }
     }
 }
