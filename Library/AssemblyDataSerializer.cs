@@ -29,7 +29,7 @@ namespace Library
             var assemblyDefinition = AssemblyDefinition.ReadAssembly(path);
             var assemblyModel = new AssemblyModel();
 
-            foreach (var type in assemblyDefinition.MainModule.Types)
+            foreach (var type in assemblyDefinition.MainModule.Types.Where(s => !s.FullName.Contains("<>") && !s.FullName.Contains("<Module>")))
             {
                 var typeModel = new TypeModel
                 {
@@ -103,37 +103,143 @@ namespace Library
                 sb.AppendLine($"inherits from: {type.InheritsFrom}");
             }
 
-            sb.AppendLine("fields:");
-            foreach (var field in type.Fields)
+            if(type.Fields.Count > 0)
             {
-                sb.AppendLine($"{field.FieldType} {field.FieldName}");
-            }
-
-            sb.AppendLine("properties:");
-            foreach (var property in type.Properties)
-            {
-                sb.AppendLine($"{property.PropertyType} {property.PropertyName}");
-            }
-
-            sb.AppendLine("methods:");
-            foreach (var method in type.Methods)
-            {
-                var methodSignature = new StringBuilder();
-                methodSignature.Append($"{method.MethodReturnType} {method.MethodName}(");
-                for (int i = 0; i < method.Parameters.Count; i++)
+                sb.AppendLine("fields:");
+                foreach (var field in type.Fields)
                 {
-                    var parameter = method.Parameters[i];
-                    methodSignature.Append($"{parameter.ParameterType} {parameter.ParameterName}");
-                    if (i < method.Parameters.Count - 1)
-                    {
-                        methodSignature.Append(", ");
-                    }
+                    sb.AppendLine($"{field.FieldType} {field.FieldName}");
                 }
-                methodSignature.Append(")");
-                sb.AppendLine($"{methodSignature}");
             }
 
-            sb.AppendLine(new string('-', 50));
+            if (type.Properties.Count > 0)
+            {
+                sb.AppendLine("properties:");
+                foreach (var property in type.Properties)
+                {
+                    sb.AppendLine($"{property.PropertyType} {property.PropertyName}");
+                }
+            }
+
+            if(type.Methods.Count > 0)
+            {
+                sb.AppendLine("methods:");
+                foreach (var method in type.Methods)
+                {
+                    var methodSignature = new StringBuilder();
+                    methodSignature.Append($"{method.MethodReturnType} {method.MethodName}(");
+                    for (int i = 0; i < method.Parameters.Count; i++)
+                    {
+                        var parameter = method.Parameters[i];
+                        methodSignature.Append($"{parameter.ParameterType} {parameter.ParameterName}");
+                        if (i < method.Parameters.Count - 1)
+                        {
+                            methodSignature.Append(", ");
+                        }
+                    }
+                    methodSignature.Append(")");
+                    sb.AppendLine($"{methodSignature}");
+                }
+            }
+
+            sb.AppendLine(new string('-', 10));
+
+            return sb.ToString();
+        }
+
+        public static string ConvertAssemblyToMarkdownTable(string path)
+        {
+            var assemblyModel = ConvertToModel(path);
+
+            if (assemblyModel == null)
+            {
+                throw new InvalidOperationException("Невозможно десериализовать JSON.");
+            }
+
+            return ConvertAssemblyToMarkdownTable(assemblyModel);
+        }
+
+        public static string ConvertAssemblyToMarkdownTable(AssemblyModel assemblyModel)
+        {
+            var sb = new StringBuilder();
+
+            // Введение разделителя между типами, если это необходимо
+            string typeSeparator = "---"; // Разделитель для лучшей читаемости и разделения типов
+
+            bool isFirstType = true; // Флаг для проверки, является ли обрабатываемый тип первым в списке
+
+            foreach (var type in assemblyModel.Types)
+            {
+                // Добавляем разделитель между типами, если это не первый тип
+                if (!isFirstType)
+                {
+                    sb.Append(typeSeparator);
+                }
+                else
+                {
+                    isFirstType = false; // Сбрасываем флаг для всех следующих типов
+                }
+
+                // Конвертируем информацию о типе в формат Markdown таблицы и добавляем в общий StringBuilder
+                sb.Append(ConvertToMarkdownTable(type));
+            }
+
+            return sb.ToString();
+        }
+
+        public static string ConvertToMarkdownTable(TypeModel type)
+        {
+            var sb = new StringBuilder();
+
+            // Добавление заголовка класса и наследования, если есть
+            sb.AppendLine($"| Class | Inherits From |");
+            sb.AppendLine($"| --- | --- |");
+            sb.AppendLine($"| {type.ClassName} | {(string.IsNullOrEmpty(type.InheritsFrom) ? "N/A" : type.InheritsFrom)} |");
+
+            // Добавление полей
+            if (type.Fields.Any())
+            {
+                sb.AppendLine("| Field Type | Field Name |");
+                sb.AppendLine("| --- | --- |");
+                foreach (var field in type.Fields)
+                {
+                    sb.AppendLine($"| {field.FieldType} | {field.FieldName} |");
+                }
+            }
+
+            // Добавление свойств
+            if (type.Properties.Any())
+            {
+                sb.AppendLine("| Property Type | Property Name |");
+                sb.AppendLine("| --- | --- |");
+                foreach (var property in type.Properties)
+                {
+                    sb.AppendLine($"| {property.PropertyType} | {property.PropertyName} |");
+                }
+            }
+
+            // Добавление методов
+            if (type.Methods.Any())
+            {
+                sb.AppendLine("| Method Signature |");
+                sb.AppendLine("| --- |");
+                foreach (var method in type.Methods)
+                {
+                    var methodSignature = new StringBuilder();
+                    methodSignature.Append($"{method.MethodReturnType} {method.MethodName}(");
+                    for (int i = 0; i < method.Parameters.Count; i++)
+                    {
+                        var parameter = method.Parameters[i];
+                        methodSignature.Append($"{parameter.ParameterType} {parameter.ParameterName}");
+                        if (i < method.Parameters.Count - 1)
+                        {
+                            methodSignature.Append(", ");
+                        }
+                    }
+                    methodSignature.Append(")");
+                    sb.AppendLine($"| {methodSignature} |");
+                }
+            }
 
             return sb.ToString();
         }
@@ -177,7 +283,7 @@ namespace Library
         {
             var references = Directory.GetFiles(managedFolder)
                                      .Where(f => !f.Contains("Newtonsoft.Json.dll"))
-                                     .Select(path => MetadataReference.CreateFromFile(path.Replace("\n", "").Replace("\r", "")))
+                                     .Select(path => MetadataReference.CreateFromFile(path.Replace("", "").Replace("\r", "")))
                                      .ToList();
 
             return CSharpCompilation.Create(compilationName,
