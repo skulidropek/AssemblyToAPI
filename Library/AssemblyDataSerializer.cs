@@ -337,7 +337,7 @@ namespace Library
         {
             var references = Directory.GetFiles(managedFolder)
                                      .Where(f => !f.Contains("Newtonsoft.Json.dll"))
-                                     .Select(path => MetadataReference.CreateFromFile(path.Replace("", "").Replace("\r", "")))
+                                     .Select(path => MetadataReference.CreateFromFile(path.Replace("\n", "").Replace("\r", "")))
                                      .ToList();
 
             return CSharpCompilation.Create(compilationName,
@@ -348,101 +348,110 @@ namespace Library
 
         public static List<string> FindHooks(string assemblyPath)
         {
-            var hooks = new ConcurrentDictionary<string, bool>();
-            var assembly = AssemblyDefinition.ReadAssembly(assemblyPath);
-
-            var hooksMethodsTuple = new List<string>();
-
-            Parallel.ForEach(assembly.MainModule.Types, type =>
+            try
             {
-                foreach (var method in type.Methods)
+                var hooks = new ConcurrentDictionary<string, bool>();
+                var assembly = AssemblyDefinition.ReadAssembly(assemblyPath);
+
+                var hooksMethodsTuple = new List<string>();
+
+                Parallel.ForEach(assembly.MainModule.Types, type =>
                 {
-                    if (method.HasBody)
+                    foreach (var method in type.Methods)
                     {
-                        for (int i = 0; i < method.Body.Instructions.Count; i++)
+                        if (method.HasBody)
                         {
-                            var instruction = method.Body.Instructions[i];
-                            if (instruction.OpCode == OpCodes.Call || instruction.OpCode == OpCodes.Callvirt)
+                            for (int i = 0; i < method.Body.Instructions.Count; i++)
                             {
-                                var methodReference = instruction.Operand as MethodReference;
-                                if (methodReference != null && IsHookMethod(methodReference))
+                                var instruction = method.Body.Instructions[i];
+                                if (instruction.OpCode == OpCodes.Call || instruction.OpCode == OpCodes.Callvirt)
                                 {
-                                    string hookName = null;
-                                    var parameters = new System.Collections.Generic.List<string>();
-
-                                    // Пройти назад по инструкциям и собрать аргументы
-                                    int argCount = methodReference.Parameters.Count;
-                                    for (int j = i - argCount, argIndex = 0; j < i; j++, argIndex++)
+                                    var methodReference = instruction.Operand as MethodReference;
+                                    if (methodReference != null && IsHookMethod(methodReference))
                                     {
-                                        if (j < 0 || j >= method.Body.Instructions.Count)
-                                            continue; // Защита от выхода за пределы
+                                        string hookName = null;
+                                        var parameters = new System.Collections.Generic.List<string>();
 
-                                        var argInstruction = method.Body.Instructions[j];
-                                        if (argIndex == 0) // Первый аргумент - имя хука
+                                        // Пройти назад по инструкциям и собрать аргументы
+                                        int argCount = methodReference.Parameters.Count;
+                                        for (int j = i - argCount, argIndex = 0; j < i; j++, argIndex++)
                                         {
-                                            hookName = argInstruction.Operand?.ToString();
+                                            if (j < 0 || j >= method.Body.Instructions.Count)
+                                                continue; // Защита от выхода за пределы
+
+                                            var argInstruction = method.Body.Instructions[j];
+                                            if (argIndex == 0) // Первый аргумент - имя хука
+                                            {
+                                                hookName = argInstruction.Operand?.ToString();
+                                            }
+                                            else // Остальные аргументы
+                                            {
+                                                var paramType = argInstruction.Operand as TypeReference;
+                                                //Console.WriteLine(paramType);
+                                                parameters.Add(paramType?.Name ?? "unknown");
+                                            }
                                         }
-                                        else // Остальные аргументы
-                                        {
-                                            var paramType = argInstruction.Operand as TypeReference;
-                                            //Console.WriteLine(paramType);
-                                            parameters.Add(paramType?.Name ?? "unknown");
-                                        }
+
+                                        if (string.IsNullOrEmpty(hookName))
+                                            continue;
+
+                                        hooksMethodsTuple.Add(type.Name + method.Name);
                                     }
-
-                                    if (string.IsNullOrEmpty(hookName))
-                                        continue;
-
-                                    hooksMethodsTuple.Add(type.Name + method.Name);
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
 
-            if(hooksMethodsTuple.Count == 0)
-            {
-                return new List<string>();
-            }
-
-            var decompiler = new CSharpDecompiler(assemblyPath, new DecompilerSettings());
-
-            var allTypeDefinitions = decompiler
-                .TypeSystem.GetAllTypeDefinitions()
-                    .Where(s => s.Methods.Any())
-                    .Where(s => hooksMethodsTuple.FirstOrDefault(s1 => s.Methods.Select(m => s.Name + m.Name).Contains(s1)) != null)
-                    .ToList();
-
-            foreach(var type in allTypeDefinitions)
-            {
-                try
+                if (hooksMethodsTuple.Count == 0)
                 {
-                    string decompiledCode = decompiler.DecompileTypeAsString(type.FullTypeName);
-                    var syntaxTree = CSharpSyntaxTree.ParseText(decompiledCode);
-                    var compilation = CreateAnalyzer(syntaxTree, "DecompiledAssembly", Path.GetDirectoryName(assemblyPath));
+                    return new List<string>();
+                }
 
-                    var semanticModel = compilation.GetSemanticModel(syntaxTree, true);
-                    var visitor = new HookFinderVisitor(semanticModel);
+                var decompiler = new CSharpDecompiler(assemblyPath, new DecompilerSettings());
 
-                    visitor.Visit(syntaxTree.GetRoot());
+                var allTypeDefinitions = decompiler
+                    .TypeSystem.GetAllTypeDefinitions()
+                        .Where(s => s.Methods.Any())
+                        .Where(s => hooksMethodsTuple.FirstOrDefault(s1 => s.Methods.Select(m => s.Name + m.Name).Contains(s1)) != null)
+                        .ToList();
 
-                    foreach (var hook in visitor.Hooks)
+                foreach (var type in allTypeDefinitions)
+                {
+                    try
                     {
-                        if (hooks.TryAdd(hook, true))
+                        string decompiledCode = decompiler.DecompileTypeAsString(type.FullTypeName);
+                        var syntaxTree = CSharpSyntaxTree.ParseText(decompiledCode);
+                        var compilation = CreateAnalyzer(syntaxTree, "DecompiledAssembly", Path.GetDirectoryName(assemblyPath));
+
+                        var semanticModel = compilation.GetSemanticModel(syntaxTree, true);
+                        var visitor = new HookFinderVisitor(semanticModel);
+
+                        visitor.Visit(syntaxTree.GetRoot());
+
+                        foreach (var hook in visitor.Hooks)
                         {
-                          //  Console.WriteLine(hook);
+                            if (hooks.TryAdd(hook, true))
+                            {
+                                //  Console.WriteLine(hook);
+                            }
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+
                 }
-                catch(Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
-               
+
+                return hooks.Select(s => s.Key).ToList();
+            }
+            catch (Exception ex)
+            {
+
             }
 
-            return hooks.Select(s => s.Key).ToList();
+            return new List<string>();
         }
 
         private static bool IsHookMethod(MethodReference method)
