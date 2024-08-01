@@ -23,7 +23,7 @@ namespace Library
             {
                 var memberAccessExpr = invocation.Expression as MemberAccessExpressionSyntax;
 
-                var code = memberAccessExpr.ToFullString();
+                var code = memberAccessExpr?.ToFullString();
 
                 if (memberAccessExpr != null && Regex.IsMatch(code, @"Interface(.Oxide)?.CallHook"))
                 {
