@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using System.Text.RegularExpressions;
+using Library.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -11,7 +12,7 @@ namespace Library
         public class HookFinderVisitor : CSharpSyntaxWalker
         {
             private readonly SemanticModel semanticModel;
-            public List<string> Hooks = new List<string>();
+            public Dictionary<string, HookModel> Hooks = new Dictionary<string, HookModel>();
 
             public HookFinderVisitor(SemanticModel semanticModel)
             {
@@ -22,7 +23,9 @@ namespace Library
             {
                 var memberAccessExpr = invocation.Expression as MemberAccessExpressionSyntax;
 
-                if (memberAccessExpr != null && Regex.IsMatch(memberAccessExpr.ToFullString(), @"Interface(.Oxide)?.CallHook"))
+                var code = memberAccessExpr.ToFullString();
+
+                if (memberAccessExpr != null && Regex.IsMatch(code, @"Interface(.Oxide)?.CallHook"))
                 {
                     var hookName = invocation.ArgumentList.Arguments.First().ToString();
                     var parameters = new List<string>();
@@ -36,9 +39,14 @@ namespace Library
 
                     var hash = hookName.Replace("\"", "") + "(" + string.Join(',', parameters) + ")";
 
-                    if (!Hooks.Contains(hash))
+                    if (!Hooks.ContainsKey(hash))
                     {
-                        Hooks.Add(hash);
+                        Hooks.Add(hash, new HookModel()
+                        {
+                            Name = hookName.Replace("\"", ""),
+                            Parameters = "(" + string.Join(',', parameters) + ")",
+                            MethodCode = code,
+                        });
                     }
                 }
 

@@ -10,6 +10,7 @@ using Mono.Cecil;
 using Mono.Cecil.Cil;
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Text;
@@ -346,11 +347,11 @@ namespace Library
                                             options: new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary));
         }
 
-        public static List<string> FindHooks(string assemblyPath)
+        public static Dictionary<string, HookModel> FindHooksDictionary(string assemblyPath)
         {
             try
             {
-                var hooks = new ConcurrentDictionary<string, bool>();
+                var hooks = new ConcurrentDictionary<string, HookModel>();
                 var assembly = AssemblyDefinition.ReadAssembly(assemblyPath);
 
                 var hooksMethodsTuple = new List<string>();
@@ -370,7 +371,7 @@ namespace Library
                                     if (methodReference != null && IsHookMethod(methodReference))
                                     {
                                         string hookName = null;
-                                        var parameters = new System.Collections.Generic.List<string>();
+                                        var parameters = new List<string>();
 
                                         // Пройти назад по инструкциям и собрать аргументы
                                         int argCount = methodReference.Parameters.Count;
@@ -387,7 +388,6 @@ namespace Library
                                             else // Остальные аргументы
                                             {
                                                 var paramType = argInstruction.Operand as TypeReference;
-                                                //Console.WriteLine(paramType);
                                                 parameters.Add(paramType?.Name ?? "unknown");
                                             }
                                         }
@@ -405,16 +405,16 @@ namespace Library
 
                 if (hooksMethodsTuple.Count == 0)
                 {
-                    return new List<string>();
+                    return new Dictionary<string, HookModel>();
                 }
 
                 var decompiler = new CSharpDecompiler(assemblyPath, new DecompilerSettings());
 
                 var allTypeDefinitions = decompiler
                     .TypeSystem.GetAllTypeDefinitions()
-                        .Where(s => s.Methods.Any())
-                        .Where(s => hooksMethodsTuple.FirstOrDefault(s1 => s.Methods.Select(m => s.Name + m.Name).Contains(s1)) != null)
-                        .ToList();
+                    .Where(s => s.Methods.Any())
+                    .Where(s => hooksMethodsTuple.FirstOrDefault(s1 => s.Methods.Select(m => s.Name + m.Name).Contains(s1)) != null)
+                    .ToList();
 
                 foreach (var type in allTypeDefinitions)
                 {
@@ -430,29 +430,25 @@ namespace Library
                         visitor.Visit(syntaxTree.GetRoot());
 
                         foreach (var hook in visitor.Hooks)
-                        {
-                            if (hooks.TryAdd(hook, true))
-                            {
-                                //  Console.WriteLine(hook);
-                            }
-                        }
+                            hooks.TryAdd(hook.Key, hook.Value);
                     }
                     catch (Exception ex)
                     {
                         Console.WriteLine(ex.Message);
                     }
-
                 }
 
-                return hooks.Select(s => s.Key).ToList();
+                return hooks.ToDictionary(pair => pair.Key, pair => pair.Value);
             }
             catch (Exception ex)
             {
-
+                Console.WriteLine(ex.Message);
             }
 
-            return new List<string>();
+            return new Dictionary<string, HookModel>();
         }
+
+        public static List<string> FindHooks(string assemblyPath) => FindHooksDictionary(assemblyPath).Select(s => s.Key).ToList();
 
         private static bool IsHookMethod(MethodReference method)
         {
