@@ -1,9 +1,11 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Reflection;
 using System.Text.RegularExpressions;
 using Library.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using static ICSharpCode.Decompiler.IL.Transforms.Stepper;
 
 namespace Library
 {
@@ -23,9 +25,7 @@ namespace Library
             {
                 var memberAccessExpr = invocation.Expression as MemberAccessExpressionSyntax;
 
-                var code = memberAccessExpr?.ToFullString();
-
-                if (memberAccessExpr != null && Regex.IsMatch(code, @"Interface(.Oxide)?.CallHook"))
+                if (memberAccessExpr != null && Regex.IsMatch(memberAccessExpr?.ToFullString(), @"Interface(.Oxide)?.CallHook"))
                 {
                     var hookName = invocation.ArgumentList.Arguments.First().ToString();
                     var parameters = new List<string>();
@@ -41,12 +41,31 @@ namespace Library
 
                     if (!Hooks.ContainsKey(hash))
                     {
-                        Hooks.Add(hash, new HookModel()
+                        var method = invocation.Ancestors().OfType<MethodDeclarationSyntax>().FirstOrDefault();
+                        if (method == null)
                         {
-                            Name = hookName.Replace("\"", ""),
-                            Parameters = "(" + string.Join(',', parameters) + ")",
-                            MethodCode = code,
-                        });
+                            // Проверка в родительских узлах
+                            var parent = invocation.Parent;
+                            while (parent != null)
+                            {
+                                method = parent.DescendantNodes().OfType<MethodDeclarationSyntax>()
+                                    .FirstOrDefault(m => m.DescendantNodes().Contains(invocation));
+                                if (method != null)
+                                    break;
+
+                                parent = parent.Parent;
+                            }
+                        }
+
+                        if (method != null)
+                        {
+                            Hooks.Add(hash, new HookModel()
+                            {
+                                Name = hookName.Replace("\"", ""),
+                                Parameters = "(" + string.Join(',', parameters) + ")",
+                                MethodCode = method.ToFullString(),
+                            });
+                        }
                     }
                 }
 

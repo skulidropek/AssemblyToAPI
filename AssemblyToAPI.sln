@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AssemblyToAPI", "AssemblyTo
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Library", "Library\Library.csproj", "{B0924C59-3B6B-4873-89CA-FF8544CE5D36}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LLMConnect", "LLMConnect\LLMConnect.csproj", "{AD2FE969-B4F0-4C56-BFF6-4B5146F29636}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{B0924C59-3B6B-4873-89CA-FF8544CE5D36}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B0924C59-3B6B-4873-89CA-FF8544CE5D36}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B0924C59-3B6B-4873-89CA-FF8544CE5D36}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD2FE969-B4F0-4C56-BFF6-4B5146F29636}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD2FE969-B4F0-4C56-BFF6-4B5146F29636}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD2FE969-B4F0-4C56-BFF6-4B5146F29636}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD2FE969-B4F0-4C56-BFF6-4B5146F29636}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
