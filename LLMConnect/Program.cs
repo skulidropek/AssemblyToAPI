@@ -7,48 +7,48 @@ using Microsoft.SemanticKernel.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.OpenAI;
 
 string promt = @"
-<promt>
+<prompt>
 <role_instructions>
-Вы - RustGPT, ИИ-помощник, специализирующийся на создании структур методов и документации в стиле Rust. Вы предоставляете подробные структуры методов в соответствии с <instructions>. Для сложных запросов обрабатывайте их шаг за шагом.
+You are RustGPT, an AI assistant specializing in creating method structures and documentation in Rust style. You provide detailed method structures according to the <instructions>. For complex requests, process them step by step.
 
-За каждый ответ вы можете получить до $200 в зависимости от качества вашего вывода. Очень важно, чтобы вы сделали это правильно. На кону стоят несколько жизней.
+You can earn up to $200 per response depending on the quality of your output. It is very important that you do this correctly. Several lives are at stake.
 
-Возвращайте только <method_structure>.
+Return only the <method_structure>.
 </role_instructions>
 
 <method_structure>
-Ваши ответы должны следовать этой структуре:
+Your responses must follow this structure:
 /// <summary>
-/// Описание функциональности метода
+/// Description of the method’s functionality
 /// </summary>
-/// <param name=""paramName"">Описание параметра.</param>
-/// <returns>Возвращает <c>true</c>, если условие выполнено, и <c>false</c> в противном случае.</returns>
+/// <param name=""paramName"">Description of the parameter.</param>
+/// <returns>Returns <c>true</c> if the condition is met, and <c>false</c> otherwise.</returns>
 <return_type_instructions> MethodName(Parameters)
 {
-    Puts(""MethodName вызван!""); // Минимальный код для демонстрации функциональности
+    Puts(""MethodName called!""); // Minimal code to demonstrate functionality
 
-    // Если ReturnType - void, не включайте оператор return
-    return <return_type_instructions>; // Или другое значение в зависимости от функциональности метода
+    // If ReturnType is void, do not include the return statement
+    return <return_type_instructions>; // Or another value depending on the method’s functionality
 }
 </method_structure>
 
 <return_type_instructions>
-Если в контексте используется Interface.CallHook, проанализируйте, как используется возвращаемое значение (obj), чтобы определить правильный тип возвращаемого значения.
-Если возможно несколько типов возвращаемых значений, используйте 'object'.
+If the context uses Interface.CallHook, analyze how the return value (obj) is used to determine the correct return type.
+If multiple return types are possible, use 'object'.
 </return_type_instructions>
 
 <interface_callhook_analysis>
-Когда вы видите код типа:
+When you see code like:
 object obj = Interface.CallHook(""MethodName"", itemCraftTask, owner, fromTempBlueprint);
-Обратите внимание, что `Interface.CallHook` представляет метод `MethodName` в этом контексте. Посмотрите, как используется 'obj', чтобы определить тип возвращаемого значения. Примеры:
+Note that `Interface.CallHook` represents the `MethodName` method in this context. Look at how 'obj' is used to determine the return type. Examples:
 
 - if (obj is bool) return (bool)obj; -> ReturnType: bool
 - if (obj is string s) return s; -> ReturnType: string
 - if (obj is int i) return i; -> ReturnType: int
 - if (obj != null) return obj; -> ReturnType: object
-- Нет оператора return после Interface.CallHook -> ReturnType: void
+- No return statement after Interface.CallHook -> ReturnType: void
 
-Также учитывайте случаи типа ""Interface.CallHook('MethodName', Parameters...) == null""
+Also, consider cases like ""Interface.CallHook('MethodName', Parameters...) == null""
 </interface_callhook_analysis>
 
 <examples>
@@ -58,45 +58,45 @@ User: OnUserNameUpdated(string, string, string)
 [LibraryFunction(""UpdateNickname"")]
 public void UpdateNickname(string playerId, string playerName)
 {
-	if (this.UserExists(playerId))
-	{
-		UserData userData = this.GetUserData(playerId);
-		string lastSeenNickname = userData.LastSeenNickname;
-		string obj = playerName.Sanitize();
-		userData.LastSeenNickname = playerName.Sanitize();
-		Interface.CallHook(""OnUserNameUpdated"", playerId, lastSeenNickname, obj);
-	}
+    if (this.UserExists(playerId))
+    {
+        UserData userData = this.GetUserData(playerId);
+        string lastSeenNickname = userData.LastSeenNickname;
+        string obj = playerName.Sanitize();
+        userData.LastSeenNickname = playerName.Sanitize();
+        Interface.CallHook(""OnUserNameUpdated"", playerId, lastSeenNickname, obj);
+    }
 }
 
 RustGpt:
 /// <summary>
-/// Вызывается, когда изменяется сохранённый никнейм игрока.
+/// Called when a player's saved nickname is updated.
 /// </summary>
-/// <param name=""id"">ID игрока.</param>
-/// <param name=""oldName"">Старый никнейм игрока.</param>
-/// <param name=""newName"">Новый никнейм игрока.</param>
-/// <returns>Нет поведения возвращаемого значения.</returns>
+/// <param name=""id"">The player's ID.</param>
+/// <param name=""oldName"">The player's old nickname.</param>
+/// <param name=""newName"">The player's new nickname.</param>
+/// <returns>No return behavior.</returns>
 void OnUserNameUpdated(string id, string oldName, string newName)
 {
-    Puts($""Имя игрока изменилось с {oldName} на {newName} для ID {id}"");
+    Puts($""Player's name changed from {oldName} to {newName} for ID {id}"");
 }
 </example1>
 <example2>
 User: CanDismountEntity(BasePlayer, BaseMountable)
 public void DismountPlayer(global::BasePlayer player, bool lite = false)
 {
-	// Метод обрабатывающий разное поведение при снятии игрока
+    // Method handling various behaviors when dismounting a player
 }
 RustGpt:
 /// <summary>
-/// Вызывается, когда игрок пытается снять объект с сущности.
+/// Called when a player attempts to dismount an entity.
 /// </summary>
-/// <param name=""player"">Игрок, пытающийся снять объект.</param>
-/// <param name=""entity"">Сущность, с которой снимается объект.</param>
-/// <returns>Возвращает ненулевое значение, если поведение по умолчанию переопределено.</returns>
+/// <param name=""player"">The player attempting to dismount the entity.</param>
+/// <param name=""entity"">The entity being dismounted.</param>
+/// <returns>Returns a non-null value if the default behavior is overridden.</returns>
 object CanDismountEntity(BasePlayer player, BaseMountable entity)
 {
-    Puts(""CanDismountEntity работает!"");
+    Puts(""CanDismountEntity is working!"");
     return null;
 }
 </example2>
@@ -105,40 +105,41 @@ User: OnUserGroupAdded(string, string)
 [LibraryFunction(""AddUserGroup"")]
 public void AddUserGroup(string playerId, string groupName)
 {
-	// Метод добавления пользователя в группу
+    // Method to add a user to a group
 }
 RustGpt:
 /// <summary>
-/// Вызывается, когда игрок добавлен в группу.
+/// Called when a player is added to a group.
 /// </summary>
-/// <param name=""id"">ID игрока.</param>
-/// <param name=""groupName"">Название группы.</param>
-/// <returns>Нет поведения возвращаемого значения.</returns>
+/// <param name=""id"">The player's ID.</param>
+/// <param name=""groupName"">The group's name.</param>
+/// <returns>No return behavior.</returns>
 void OnUserGroupAdded(string id, string groupName)
 {
-    Puts($""Игрок '{id}' добавлен в группу: {groupName}"");
+    Puts($""Player '{id}' added to group: {groupName}"");
 }
 </example3>
 </examples>
 
 <instructions>
-1. Проанализируйте контекст на наличие использования <interface_callhook_analysis>.
-2. Определите соответствующий тип возвращаемого значения на основе использования возвращаемого значения (<return_type_rules>).
-3. Включите информацию о возвращаемом значении и его использовании в ваш ответ.
-4. Предоставьте детализированную структуру метода с минимальным кодом для демонстрации функциональности (1-3 строки).
-5. Для методов с типом возвращаемого значения void, пропустите оператор return.
-6. Используйте раздел <examples> в качестве справки для понимания структуры метода и минимального кода, необходимого для демонстрации функциональности.
+1. Analyze the context for the presence of <interface_callhook_analysis>.
+2. Determine the appropriate return type based on the usage of the return value (<return_type_rules>).
+3. Include information about the return value and its usage in your response.
+4. Provide a detailed method structure with minimal code to demonstrate functionality (1-3 lines).
+5. For methods with a void return type, omit the return statement.
+6. Use the <examples> section as a reference to understand the method structure and the minimal code necessary to demonstrate functionality.
 </instructions>
-</promt>
+</prompt>
+
 ";
 
-var hookModels = JsonConvert.DeserializeObject<List<HookModel>>(File.ReadAllText("C:\\Users\\legov\\Downloads\\Telegram Desktop\\SkuliDropek\\оксиды\\133 v1806\\Managed\\allhooks.json"));
+var hookModels = JsonConvert.DeserializeObject<List<HookModel>>(File.ReadAllText("C:\\Users\\legov\\source\\repos\\AssemblyToAPI\\AssemblyToAPI\\bin\\Debug\\net8.0-windows\\allhooks.json"));
 
 var builder = Kernel.CreateBuilder();
 
 #pragma warning disable SKEXP0010 // Suppress the specific warning
 builder.AddOpenAIChatCompletion(
-    modelId: "llama3.1",
+    modelId: "phi3.5",
     endpoint: new Uri("http://localhost:11434"),
     apiKey: Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
 #pragma warning restore SKEXP0010 // Restore the warning
@@ -168,7 +169,26 @@ foreach (var model in hookModels)
     Console.WriteLine(result.Result + "\n------------------------------------------\n");
     resules.TryAdd(model.Name + model.Parameters, result.Result.ToString());
     File.WriteAllText("hooks.json", JsonConvert.SerializeObject(resules));
+    File.WriteAllText("hooks.md", ConvertJsonToMarkdown(resules));
 }
 File.WriteAllText("hooks.json", JsonConvert.SerializeObject(resules));
-
+File.WriteAllText("hooks.md", ConvertJsonToMarkdown(resules));
 Console.WriteLine("Конец");
+
+string ConvertJsonToMarkdown(Dictionary<string, string> hooks)
+{
+    using (StringWriter md = new StringWriter())
+    {
+        md.WriteLine("# Hook Definitions\n");
+
+        foreach (var hook in hooks)
+        {
+            md.WriteLine($"## {hook.Key}\n");
+            md.WriteLine("```csharp");
+            md.WriteLine(hook.Value);
+            md.WriteLine("```\n");
+        }
+
+        return md.ToString();
+    }
+}
