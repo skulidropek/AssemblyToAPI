@@ -132,7 +132,7 @@ void OnUserGroupAdded(string id, string groupName)
 </promt>
 ";
 
-var hookModels = JsonConvert.DeserializeObject<Dictionary<string, HookModel>>(File.ReadAllText("C:\\RustServer 2.0\\rustserver\\RustDedicated_Data\\Managed\\Assembly-CSharp_hooks.json"));
+var hookModels = JsonConvert.DeserializeObject<List<HookModel>>(File.ReadAllText("C:\\Users\\legov\\Downloads\\Telegram Desktop\\SkuliDropek\\оксиды\\133 v1806\\Managed\\allhooks.json"));
 
 var builder = Kernel.CreateBuilder();
 
@@ -150,9 +150,9 @@ foreach (var model in hookModels)
 {
     var chatHistory = new ChatHistory();
     chatHistory.AddUserMessage($@"Напиши мне документация для 
-{model.Key}
+{model.Name + model.Parameters}
 Данный хук вызывается в 
-{model.Value.MethodCode}");
+{model.MethodCode}");
 
     var chatCompletionService = kernel.GetRequiredService<IChatCompletionService>();
     var result = chatCompletionService.GetChatMessageContentAsync(
@@ -166,7 +166,7 @@ foreach (var model in hookModels)
         kernel: kernel);
 
     Console.WriteLine(result.Result + "\n------------------------------------------\n");
-    resules.TryAdd(model.Key, result.Result.ToString());
+    resules.TryAdd(model.Name + model.Parameters, result.Result.ToString());
     File.WriteAllText("hooks.json", JsonConvert.SerializeObject(resules));
 }
 File.WriteAllText("hooks.json", JsonConvert.SerializeObject(resules));
