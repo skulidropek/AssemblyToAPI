@@ -11,7 +11,9 @@
         <Button Content="Выбрать DLL" HorizontalAlignment="Center" Margin="0,326,0,0" VerticalAlignment="Top" Height="87" Width="412" Click="Button_Click"/>
         <ComboBox x:Name="ComboBox" Margin="670,326,10,0" VerticalAlignment="Top" Height="23" >
             <ComboBoxItem Content="API"/>
+            <ComboBoxItem Content="ALLAPI"/>
             <ComboBoxItem Content="HOOKS"/>
+            <ComboBoxItem Content="ALLHOOKS"/>
         </ComboBox>
 
     </Grid>

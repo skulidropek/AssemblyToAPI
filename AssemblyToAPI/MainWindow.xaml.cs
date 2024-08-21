@@ -1,20 +1,14 @@
 ﻿using System.IO;
-using System.Net;
-using System.Text;
-using System.Text.Json.Serialization;
+using System.Linq;
 using System.Windows;
 using Library;
-using Microsoft.Win32;
-using Mono.Cecil;
+using Library.Models;
 using Newtonsoft.Json;
 using Ookii.Dialogs.Wpf;
-using static System.Net.Mime.MediaTypeNames;
+using System.Collections.Generic;
 
 namespace AssemblyToAPI
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         public MainWindow()
@@ -24,90 +18,100 @@ namespace AssemblyToAPI
 
         private void Button_Click(object sender, RoutedEventArgs e)
         {
-            string selectedItem = ComboBox.SelectedItem.ToString();
+            string selectedItem = ComboBox.SelectedItem?.ToString();
 
             if (string.IsNullOrEmpty(selectedItem))
             {
-                MessageBox.Show("Need to select a combobox");
+                MessageBox.Show("Please select an option from the combobox.");
                 return;
             }
 
-            string path = GetPathOpenFileDialog();
+            string path = selectedItem.Contains("ALL") ? GetPathOpenFolderDialog() : GetPathOpenFileDialog();
 
             if (string.IsNullOrEmpty(path))
             {
-                MessageBox.Show("Need to select a dll");
+                MessageBox.Show("Please select a valid file or folder.");
                 return;
             }
 
-            string assemblyPath = path;
+            bool isDirectory = Directory.Exists(path);
 
-            if(selectedItem.Contains("API"))
+            if (selectedItem.Contains("API"))
             {
-                var text = AssemblyDataSerializer.ConvertToText(assemblyPath);
-                TextBox.Text = text;
-                File.WriteAllText(Path.GetFileName(assemblyPath) + ".txt", text);
-                File.WriteAllText(assemblyPath + ".txt", text);
-                return;
+                ProcessApiFiles(path, isDirectory);
             }
-
-            if(selectedItem.Contains("HOOKS"))
+            else if (selectedItem.Contains("HOOKS"))
             {
-                var json = AssemblyDataSerializer.FindHooks(assemblyPath);
-                TextBox.Text = JsonConvert.SerializeObject(json);
-                File.WriteAllText(Path.GetFileName(assemblyPath) + "hooks.json", TextBox.Text);
-                File.WriteAllText(assemblyPath + "hooks.json", TextBox.Text);
-
-                return;
+                ProcessHookFiles(path, isDirectory);
             }
         }
 
-        static string GetFriendlyTypeName(TypeReference type)
+        private void ProcessApiFiles(string path, bool isDirectory)
         {
-            switch (type.FullName)
-            {
-                case "System.Void": return "void";
-                case "System.Int32": return "int";
-                case "System.Single": return "float";
-                case "System.Double": return "double";
-                case "System.Decimal": return "decimal";
-                case "System.Boolean": return "bool";
-                case "System.Char": return "char";
-                case "System.Byte": return "byte";
-                case "System.SByte": return "sbyte";
-                case "System.Int16": return "short";
-                case "System.UInt16": return "ushort";
-                case "System.Int64": return "long";
-                case "System.UInt64": return "ulong";
-                case "System.String": return "string";
-                case "System.Object": return "object";
-                // Add other conversions
-                // ...
-                default:
-                    if (type.IsGenericInstance)
-                    {
-                        var genericType = (GenericInstanceType)type;
-                        string genericTypeName = GetFriendlyTypeName(genericType.ElementType);
-                        string genericArgs = string.Join(", ", genericType.GenericArguments.Select(GetFriendlyTypeName));
-                        return $"{genericTypeName}<{genericArgs}>";
-                    }
+            string[] files = isDirectory
+                ? Directory.GetFiles(path, "*.dll").Where(file => !file.EndsWith(".txt")).ToArray()
+                : new[] { path };
 
-                    return type.Name;
+            foreach (var file in files)
+            {
+                try
+                {
+                    var text = AssemblyDataSerializer.ConvertToText(file);
+                    TextBox.Text = text;
+                    SaveToFile(file, text, ".txt");
+                }
+                catch
+                {
+                    MessageBox.Show($"Failed to process file: {file}");
+                }
             }
+        }
+
+        private void ProcessHookFiles(string path, bool isDirectory)
+        {
+            string[] files = isDirectory
+                ? Directory.GetFiles(path, "*.dll").Where(file => !file.EndsWith(".txt")).ToArray()
+                : new[] { path };
+
+            var allHooks = new List<HookModel>();
+
+            foreach (var file in files)
+            {
+                var hooksDictionary = AssemblyDataSerializer.FindHooksDictionary(file);
+
+                if (hooksDictionary.Count == 0) continue;
+
+                allHooks.AddRange(hooksDictionary.Values);
+                var jsonString = JsonConvert.SerializeObject(hooksDictionary);
+                TextBox.Text = jsonString;
+                SaveToFile(file, jsonString, "_hooks.json");
+            }
+
+            if (isDirectory)
+            {
+                var distinctHooks = allHooks.Distinct().ToList();
+                var allHooksJson = JsonConvert.SerializeObject(distinctHooks);
+                var folderPath = Path.GetDirectoryName(files.First());
+                File.WriteAllText(Path.Combine(folderPath, "allhooks.json"), allHooksJson);
+            }
+        }
+
+        private void SaveToFile(string filePath, string content, string extension)
+        {
+            var outputFileName = Path.Combine(Path.GetDirectoryName(filePath), Path.GetFileNameWithoutExtension(filePath) + extension);
+            File.WriteAllText(outputFileName, content);
         }
 
         private string GetPathOpenFileDialog()
         {
-            VistaOpenFileDialog openFileDialog = new VistaOpenFileDialog();
+            var openFileDialog = new VistaOpenFileDialog { Filter = "Dll (*.dll)|*.dll" };
+            return openFileDialog.ShowDialog() == true ? openFileDialog.FileName : string.Empty;
+        }
 
-            openFileDialog.Filter = "Dll (*.dll)|*.dll";
-
-            if (openFileDialog.ShowDialog() == false)
-            {
-                return "";
-            }
-
-            return openFileDialog.FileName;
+        private string GetPathOpenFolderDialog()
+        {
+            var folderDialog = new VistaFolderBrowserDialog();
+            return folderDialog.ShowDialog() == true ? folderDialog.SelectedPath : string.Empty;
         }
     }
 }
