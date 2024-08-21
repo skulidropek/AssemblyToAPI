@@ -130,25 +130,32 @@ void OnUserGroupAdded(string id, string groupName)
 6. Use the <examples> section as a reference to understand the method structure and the minimal code necessary to demonstrate functionality.
 </instructions>
 </prompt>
-
 ";
 
-var hookModels = JsonConvert.DeserializeObject<List<HookModel>>(File.ReadAllText("C:\\Users\\legov\\source\\repos\\AssemblyToAPI\\AssemblyToAPI\\bin\\Debug\\net8.0-windows\\allhooks.json"));
+var hookModels = JsonConvert.DeserializeObject<List<HookModel>>(File.ReadAllText("C:\\RustServer 2.0\\rustserver\\RustDedicated_Data\\Managed\\allhooks.json"));
 
 var builder = Kernel.CreateBuilder();
 
 #pragma warning disable SKEXP0010 // Suppress the specific warning
 builder.AddOpenAIChatCompletion(
-    modelId: "phi3.5",
+    modelId: "llama3.1",
     endpoint: new Uri("http://localhost:11434"),
     apiKey: Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
 #pragma warning restore SKEXP0010 // Restore the warning
 
 var kernel = builder.Build();
 
-Dictionary<string, string> resules = new Dictionary<string, string>();
+Dictionary<string, (string, HookModel)> resules = new Dictionary<string, (string, HookModel)>();
+Dictionary<string, string> jsonResult = JsonConvert.DeserializeObject<Dictionary<string, string>>(File.ReadAllText("C:\\Users\\legov\\source\\repos\\AssemblyToAPI\\LLMConnect\\bin\\Debug\\net8.0\\hooks.json"));
+
 foreach (var model in hookModels)
 {
+    if(jsonResult.ContainsKey(model.Name + model.Parameters))
+    {
+        resules.TryAdd(model.Name + model.Parameters, (jsonResult[model.Name + model.Parameters], model));
+        continue;
+    }
+
     var chatHistory = new ChatHistory();
     chatHistory.AddUserMessage($@"Напиши мне документация для 
 {model.Name + model.Parameters}
@@ -167,15 +174,15 @@ foreach (var model in hookModels)
         kernel: kernel);
 
     Console.WriteLine(result.Result + "\n------------------------------------------\n");
-    resules.TryAdd(model.Name + model.Parameters, result.Result.ToString());
-    File.WriteAllText("hooks.json", JsonConvert.SerializeObject(resules));
-    File.WriteAllText("hooks.md", ConvertJsonToMarkdown(resules));
+    resules.TryAdd(model.Name + model.Parameters, (result.Result.ToString(), model));
+    File.WriteAllText("hooks.json", JsonConvert.SerializeObject(resules.ToDictionary(s => s.Key, s => s.Value.Item1)));
+    //File.WriteAllText("hooks.md", ConvertJsonToMarkdown(resules));
 }
 File.WriteAllText("hooks.json", JsonConvert.SerializeObject(resules));
 File.WriteAllText("hooks.md", ConvertJsonToMarkdown(resules));
 Console.WriteLine("Конец");
 
-string ConvertJsonToMarkdown(Dictionary<string, string> hooks)
+string ConvertJsonToMarkdown(Dictionary<string, (string, HookModel)> hooks)
 {
     using (StringWriter md = new StringWriter())
     {
@@ -185,7 +192,12 @@ string ConvertJsonToMarkdown(Dictionary<string, string> hooks)
         {
             md.WriteLine($"## {hook.Key}\n");
             md.WriteLine("```csharp");
-            md.WriteLine(hook.Value);
+            md.WriteLine(hook.Value.Item1);
+            md.WriteLine("```\n");
+
+            md.WriteLine("### Source Code from the Library\n");
+            md.WriteLine("```csharp");
+            md.WriteLine(hook.Value.Item2.MethodCode);
             md.WriteLine("```\n");
         }
 
