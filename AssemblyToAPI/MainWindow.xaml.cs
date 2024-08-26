@@ -98,7 +98,7 @@ namespace AssemblyToAPI
 
         private void SaveToFile(string filePath, string content, string extension)
         {
-            var outputFileName = Path.Combine(Path.GetDirectoryName(filePath), Path.GetFileNameWithoutExtension(filePath) + extension);
+            var outputFileName = Path.Combine(Path.GetDirectoryName(filePath), Path.GetFileName(filePath) + extension);
             File.WriteAllText(outputFileName, content);
         }
 
