@@ -34,20 +34,21 @@ namespace AssemblyToAPI
                 return;
             }
 
-            bool isDirectory = Directory.Exists(path);
 
             if (selectedItem.Contains("API"))
             {
-                ProcessApiFiles(path, isDirectory);
+                ProcessApiFiles(path);
             }
             else if (selectedItem.Contains("HOOKS"))
             {
-                ProcessHookFiles(path, isDirectory);
+                ProcessHookFiles(path);
             }
         }
 
-        private void ProcessApiFiles(string path, bool isDirectory)
+        private void ProcessApiFiles(string path)
         {
+            bool isDirectory = Directory.Exists(path);
+
             string[] files = isDirectory
                 ? Directory.GetFiles(path, "*.dll").Where(file => !file.EndsWith(".txt")).ToArray()
                 : new[] { path };
@@ -67,8 +68,10 @@ namespace AssemblyToAPI
             }
         }
 
-        private void ProcessHookFiles(string path, bool isDirectory)
+        private void ProcessHookFiles(string path)
         {
+            bool isDirectory = Directory.Exists(path);
+
             string[] files = isDirectory
                 ? Directory.GetFiles(path, "*.dll").Where(file => !file.EndsWith(".txt")).ToArray()
                 : new[] { path };
