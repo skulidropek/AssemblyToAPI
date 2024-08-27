@@ -383,7 +383,10 @@ namespace Library
                         visitor.Visit(syntaxTree.GetRoot());
 
                         foreach (var hook in visitor.Hooks)
+                        {
+                            hook.Value.ClassName = type.Name;
                             hooks.TryAdd(hook.Key, hook.Value);
+                        }
                     }
                     catch (Exception ex)
                     {
