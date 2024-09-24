@@ -24,51 +24,78 @@ namespace Library
         public static string ConvertToJSON(string path)
         {
             return JsonSerializer.Serialize(ConvertToModel(path), new JsonSerializerOptions { WriteIndented = true });
-        } 
-        
+        }
+
         public static AssemblyModel ConvertToModel(string path)
         {
             var assemblyDefinition = AssemblyDefinition.ReadAssembly(path);
             var assemblyModel = new AssemblyModel();
 
+            // Обрабатываем типы (классы, интерфейсы и т.д.)
             foreach (var type in assemblyDefinition.MainModule.Types.Where(s => !s.FullName.Contains("<>") && !s.FullName.Contains("<Module>")))
             {
                 var typeModel = new TypeModel
                 {
                     ClassName = type.FullName,
                     InheritsFrom = type.BaseType != null ? type.BaseType.GetFriendlyTypeName() : null,
-                    Accessibility = type.GetAccessibility()
+                    Accessibility = type.GetAccessibility(),
+                    IsAbstract = type.IsAbstract,
+                    IsSealed = type.IsSealed,
+                    IsStatic = type.IsAbstract && type.IsSealed // В C# статический класс это абстрактный + запечатанный
                 };
 
+                // Обрабатываем поля
                 foreach (var field in type.Fields)
                 {
-                    typeModel.Fields.Add(new FieldModel
+                    var fieldModel = new FieldModel
                     {
                         FieldType = field.FieldType.GetFriendlyTypeName(),
                         FieldName = field.Name,
+                        IsStatic = field.IsStatic,
+                        IsReadOnly = field.IsInitOnly, // readonly поле
                         Accessibility = field.GetAccessibility()
-                    });
+                    };
+                    typeModel.Fields.Add(fieldModel);
                 }
 
+                // Обрабатываем свойства
+                // Обрабатываем свойства
                 foreach (var property in type.Properties)
                 {
-                    typeModel.Properties.Add(new PropertyModel
+                    var propertyModel = new PropertyModel
                     {
                         PropertyType = property.PropertyType.GetFriendlyTypeName(),
-                        PropertyName = property.Name,
-                        Accessibility = property.GetAccessibility()
-                    });
+                        PropertyName = property.Name
+                    };
+
+                    // Получаем уровни доступа для get и set методов, а также информацию о статичности
+                    var (getAccessibility, setAccessibility, isStatic) = property.GetAccessibility();
+
+                    propertyModel.GetAccessibility = getAccessibility;
+                    propertyModel.SetAccessibility = setAccessibility;
+                    propertyModel.IsStatic = isStatic;
+
+                    // Добавляем свойство в модель типа
+                    typeModel.Properties.Add(propertyModel);
                 }
 
+
+                // Обрабатываем методы
                 foreach (var method in type.Methods)
                 {
                     var methodModel = new MethodModel
                     {
                         MethodReturnType = method.ReturnType.GetFriendlyTypeName(),
                         MethodName = method.Name,
+                        IsStatic = method.IsStatic,
+                        IsVirtual = method.IsVirtual,
+                        IsOverride = method.HasOverrides,
+                        IsAbstract = method.IsAbstract,
+                        IsSealed = method.IsFinal,  // sealed метод в IL выражается как final
                         Accessibility = method.GetAccessibility()
                     };
 
+                    // Обрабатываем параметры метода
                     foreach (var parameter in method.Parameters)
                     {
                         methodModel.Parameters.Add(new ParameterModel
@@ -81,12 +108,13 @@ namespace Library
                     typeModel.Methods.Add(methodModel);
                 }
 
+                // Добавляем тип в модель сборки
                 assemblyModel.Types.Add(typeModel);
             }
 
-
             return assemblyModel;
         }
+
 
         public static string ConvertToText(string path)
         {
@@ -106,52 +134,9 @@ namespace Library
 
             foreach (var type in assemblyModel.Types.OrderBy(s => s.ClassName).Where(s => !s.ClassName.StartsWith("<")))
             {
-                sb.Append(ConvertToText(type));
+                sb.Append(type.ToString());
             }
 
-            return sb.ToString();
-        }
-
-        public static string ConvertToText(TypeModel type)
-        {
-            var sb = new StringBuilder();
-
-            sb.AppendLine($"{type.Accessibility} {type.ClassName}{(string.IsNullOrEmpty(type.InheritsFrom) ? "" : " : " + type.InheritsFrom)} {{");
-
-            if (type.Fields.Count == 0 && type.Properties.Count == 0 && type.Methods.Count == 0)
-            {
-                return string.Empty;
-            }
-
-            var body = new StringBuilder();
-
-            foreach (var field in type.Fields)
-            {
-                body.AppendLine($"{field.Accessibility} {field.FieldType} {field.FieldName}");
-            }
-
-            foreach (var property in type.Properties)
-            {
-                body.AppendLine($"{property.Accessibility} {property.PropertyType} {property.PropertyName}");
-            }
-
-            foreach (var method in type.Methods)
-            {
-                var methodSignature = $"{method.Accessibility} {method.MethodReturnType} {method.MethodName}({string.Join(", ", method.Parameters.Select(p => $"{p.ParameterType} {p.ParameterName}"))})";
-                
-                if(Regex.IsMatch(methodSignature, @"void .c?ctor\(\)"))
-                    continue;
-
-                body.AppendLine(methodSignature);
-            }
-
-            if (body.Length == 0)
-            {
-                return string.Empty;
-            }
-
-            sb.Append(body);
-            sb.AppendLine("}");
             return sb.ToString();
         }
 

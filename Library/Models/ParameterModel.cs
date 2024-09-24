@@ -4,5 +4,10 @@
     {
         public string ParameterType { get; set; }
         public string ParameterName { get; set; }
+
+        public override string ToString()
+        {
+            return $"{ParameterType} {ParameterName}";
+        }
     }
 }
