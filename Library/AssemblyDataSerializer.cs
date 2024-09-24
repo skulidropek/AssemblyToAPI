@@ -55,7 +55,7 @@ namespace Library
                     {
                         foreach (var argument in attribute.ConstructorArguments)
                         {
-                            attributeModel.Arguments.Add(argument.Value.ToString());
+                            attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
                         }
                     }
 
@@ -83,7 +83,7 @@ namespace Library
                         {
                             foreach (var argument in attribute.ConstructorArguments)
                             {
-                                attributeModel.Arguments.Add(argument.Value.ToString());
+                                attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
                             }
                         }
 
@@ -118,7 +118,7 @@ namespace Library
                         {
                             foreach (var argument in attribute.ConstructorArguments)
                             {
-                                attributeModel.Arguments.Add(argument.Value.ToString());
+                                attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
                             }
                         }
 
@@ -166,7 +166,7 @@ namespace Library
                             {
                                 foreach (var argument in attribute.ConstructorArguments)
                                 {
-                                    attributeModel.Arguments.Add(argument.Value.ToString());
+                                    attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
                                 }
                             }
 
@@ -209,7 +209,7 @@ namespace Library
                             {
                                 foreach (var argument in attribute.ConstructorArguments)
                                 {
-                                    attributeModel.Arguments.Add(argument.Value.ToString());
+                                    attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
                                 }
                             }
 
