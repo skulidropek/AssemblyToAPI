@@ -61,9 +61,9 @@ namespace AssemblyToAPI
                     TextBox.Text = text;
                     SaveToFile(file, text, ".txt");
                 }
-                catch
+                catch(Exception ex)
                 {
-                    MessageBox.Show($"Failed to process file: {file}");
+                    MessageBox.Show($"Failed to process file: {file} | ex {ex}");
                 }
             }
         }

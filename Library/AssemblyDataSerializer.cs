@@ -28,7 +28,21 @@ namespace Library
 
         public static AssemblyModel ConvertToModel(string path)
         {
-            var assemblyDefinition = AssemblyDefinition.ReadAssembly(path);
+            var directory = Path.GetDirectoryName(path);
+
+            var resolver = new DefaultAssemblyResolver();
+
+            if (directory != null)
+            {
+                resolver.AddSearchDirectory(directory);
+            }
+
+            var readerParameters = new ReaderParameters
+            {
+                AssemblyResolver = resolver
+            };
+
+            var assemblyDefinition = AssemblyDefinition.ReadAssembly(path, readerParameters);
             var assemblyModel = new AssemblyModel();
 
             foreach (var type in assemblyDefinition.MainModule.Types.Where(s => !s.FullName.Contains("<>") && !s.FullName.Contains("<Module>")))
