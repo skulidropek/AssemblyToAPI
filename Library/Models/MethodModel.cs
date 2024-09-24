@@ -23,11 +23,12 @@ namespace Library.Models
             var abstractModifier = IsAbstract ? "abstract " : string.Empty;
             var sealedModifier = IsSealed ? "sealed " : string.Empty;
 
-            // Формируем сигнатуру метода
+            // Формируем строку с параметрами
             var parametersString = Parameters.Any()
                 ? string.Join(", ", Parameters)
                 : string.Empty;
 
+            // Обычный метод
             var methodSignature = $"{Accessibility.ToAccessibilityString()} {staticModifier}{abstractModifier}{sealedModifier}{virtualModifier}{overrideModifier}{MethodReturnType} {MethodName}({parametersString})";
 
             return methodSignature.Trim() + ";";

@@ -83,32 +83,65 @@ namespace Library
                 // Обрабатываем методы
                 foreach (var method in type.Methods)
                 {
-                    var methodModel = new MethodModel
-                    {
-                        MethodReturnType = method.ReturnType.GetFriendlyTypeName(),
-                        MethodName = method.Name,
-                        IsStatic = method.IsStatic,
-                        IsVirtual = method.IsVirtual,
-                        IsOverride = method.HasOverrides,
-                        IsAbstract = method.IsAbstract,
-                        IsSealed = method.IsFinal,  // sealed метод в IL выражается как final
-                        Accessibility = method.GetAccessibility()
-                    };
+                    var isConstructor = method.Name == ".ctor" || method.Name == ".cctor";
 
-                    // Обрабатываем параметры метода
-                    foreach (var parameter in method.Parameters)
+                    if (isConstructor)
                     {
-                        methodModel.Parameters.Add(new ParameterModel
+                        // Обработка конструктора
+                        var constructorModel = new ConstructorModel
                         {
-                            ParameterType = parameter.ParameterType.GetFriendlyTypeName(),
-                            ParameterName = parameter.Name
-                        });
-                    }
+                            ConstructorName = type.Name, // Имя конструктора — это имя класса
+                            IsStatic = method.IsStatic,
+                            Accessibility = method.GetAccessibility()
+                        };
 
-                    typeModel.Methods.Add(methodModel);
+                        // Обработка параметров конструктора
+                        foreach (var parameter in method.Parameters)
+                        {
+                            constructorModel.Parameters.Add(new ParameterModel
+                            {
+                                ParameterType = parameter.ParameterType.GetFriendlyTypeName(),
+                                ParameterName = parameter.Name
+                            });
+                        }
+
+                        // Пропускаем пустые конструкторы
+                        if (!constructorModel.Parameters.Any() && !method.IsStatic)
+                        {
+                            continue; // Пустой нестатический конструктор не добавляем
+                        }
+
+                        typeModel.Constructors.Add(constructorModel);
+                    }
+                    else
+                    {
+                        // Обработка обычных методов
+                        var methodModel = new MethodModel
+                        {
+                            MethodReturnType = method.ReturnType.GetFriendlyTypeName(),
+                            MethodName = method.Name,
+                            IsStatic = method.IsStatic,
+                            IsVirtual = method.IsVirtual,
+                            IsOverride = method.HasOverrides,
+                            IsAbstract = method.IsAbstract,
+                            IsSealed = method.IsFinal,
+                            Accessibility = method.GetAccessibility()
+                        };
+
+                        // Обработка параметров метода
+                        foreach (var parameter in method.Parameters)
+                        {
+                            methodModel.Parameters.Add(new ParameterModel
+                            {
+                                ParameterType = parameter.ParameterType.GetFriendlyTypeName(),
+                                ParameterName = parameter.Name
+                            });
+                        }
+
+                        typeModel.Methods.Add(methodModel);
+                    }
                 }
 
-                // Добавляем тип в модель сборки
                 assemblyModel.Types.Add(typeModel);
             }
 
