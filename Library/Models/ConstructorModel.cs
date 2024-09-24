@@ -1,9 +1,6 @@
 ﻿using Library.Extensions;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Library.Models
 {
@@ -14,6 +11,9 @@ namespace Library.Models
         public List<ParameterModel> Parameters { get; set; } = new List<ParameterModel>();
         public bool IsStatic { get; set; }
 
+        // Поддержка атрибутов
+        public List<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
+
         public override string ToString()
         {
             var staticModifier = IsStatic ? "static " : string.Empty;
@@ -23,8 +23,13 @@ namespace Library.Models
                 ? string.Join(", ", Parameters)
                 : string.Empty;
 
+            // Формируем строку для атрибутов
+            var attributesString = Attributes.Any()
+                ? string.Join(System.Environment.NewLine, Attributes.Select(attr => attr.ToString())) + System.Environment.NewLine
+                : string.Empty;
+
             // Формируем сигнатуру конструктора
-            return $"{Accessibility.ToAccessibilityString()} {staticModifier}{ConstructorName}({parametersString});";
+            return $"{attributesString}{Accessibility.ToAccessibilityString()} {staticModifier}{ConstructorName}({parametersString});";
         }
     }
 }

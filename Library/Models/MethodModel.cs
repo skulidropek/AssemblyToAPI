@@ -1,4 +1,6 @@
 ﻿using Library.Extensions;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Library.Models
 {
@@ -15,6 +17,9 @@ namespace Library.Models
         public bool IsAbstract { get; set; }
         public bool IsSealed { get; set; }
 
+        // Поддержка атрибутов
+        public List<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
+
         public override string ToString()
         {
             var staticModifier = IsStatic ? "static " : string.Empty;
@@ -28,10 +33,15 @@ namespace Library.Models
                 ? string.Join(", ", Parameters)
                 : string.Empty;
 
-            // Обычный метод
+            // Формируем строку для атрибутов
+            var attributesString = Attributes.Any()
+                ? string.Join(System.Environment.NewLine, Attributes.Select(attr => attr.ToString())) + System.Environment.NewLine
+                : string.Empty;
+
+            // Формируем сигнатуру метода
             var methodSignature = $"{Accessibility.ToAccessibilityString()} {staticModifier}{abstractModifier}{sealedModifier}{virtualModifier}{overrideModifier}{MethodReturnType} {MethodName}({parametersString})";
 
-            return methodSignature.Trim() + ";";
+            return $"{attributesString}{methodSignature.Trim()};";
         }
     }
 }

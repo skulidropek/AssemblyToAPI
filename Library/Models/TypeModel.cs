@@ -9,10 +9,12 @@ namespace Library.Models
         public string InheritsFrom { get; set; }
         public TypeAccessibilityLevel Accessibility { get; set; }
 
-        public bool IsAbstract { get; set; }  
-        public bool IsStatic { get; set; }   
-        public bool IsInterface { get; set; } 
-        public bool IsEnum { get; set; } 
+        public bool IsAbstract { get; set; }
+        public bool IsStatic { get; set; }
+        public bool IsInterface { get; set; }
+        public bool IsEnum { get; set; }
+
+        public List<AttributeModel> Attributes { get; set; } = new List<AttributeModel>();
 
         public List<FieldModel> Fields { get; set; } = new List<FieldModel>();
         public List<PropertyModel> Properties { get; set; } = new List<PropertyModel>();
@@ -23,12 +25,15 @@ namespace Library.Models
         {
             var sb = new StringBuilder();
 
+            // Формируем строку для атрибутов
+            var attributesString = Attributes.Any() ? string.Join(Environment.NewLine, Attributes.Select(attr => attr.ToString())) + Environment.NewLine : string.Empty;
+
             var typeModifier = IsInterface ? "interface " :
                                IsEnum ? "enum " :
                                IsStatic ? "static class " :
                                IsAbstract ? "abstract class " : "class ";
 
-            sb.AppendLine($"{Accessibility.ToAccessibilityString()} {typeModifier}{ClassName}{(string.IsNullOrEmpty(InheritsFrom) ? "" : " : " + InheritsFrom)} {{");
+            sb.AppendLine($"{attributesString}{Accessibility.ToAccessibilityString()} {typeModifier}{ClassName}{(string.IsNullOrEmpty(InheritsFrom) ? "" : " : " + InheritsFrom)} {{");
 
             foreach (var field in Fields)
             {

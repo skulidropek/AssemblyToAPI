@@ -31,7 +31,6 @@ namespace Library
             var assemblyDefinition = AssemblyDefinition.ReadAssembly(path);
             var assemblyModel = new AssemblyModel();
 
-            // Обрабатываем типы (классы, интерфейсы и т.д.)
             foreach (var type in assemblyDefinition.MainModule.Types.Where(s => !s.FullName.Contains("<>") && !s.FullName.Contains("<Module>")))
             {
                 var typeModel = new TypeModel
@@ -39,11 +38,29 @@ namespace Library
                     ClassName = type.FullName,
                     InheritsFrom = type.BaseType != null ? type.BaseType.GetFriendlyTypeName() : null,
                     Accessibility = type.GetAccessibility(),
-                    IsAbstract = type.IsAbstract && !type.IsInterface && !type.IsEnum,  
+                    IsAbstract = type.IsAbstract && !type.IsInterface && !type.IsEnum,
                     IsStatic = type.IsAbstract && type.IsSealed && !type.IsInterface && !type.IsEnum,
-                    IsInterface = type.IsInterface,  
-                    IsEnum = type.IsEnum 
+                    IsInterface = type.IsInterface,
+                    IsEnum = type.IsEnum
                 };
+
+                foreach (var attribute in type.CustomAttributes)
+                {
+                    var attributeModel = new AttributeModel
+                    {
+                        Name = attribute.AttributeType.Name
+                    };
+
+                    if (attribute.HasConstructorArguments)
+                    {
+                        foreach (var argument in attribute.ConstructorArguments)
+                        {
+                            attributeModel.Arguments.Add(argument.Value.ToString());
+                        }
+                    }
+
+                    typeModel.Attributes.Add(attributeModel);
+                }
 
                 foreach (var field in type.Fields)
                 {
@@ -52,9 +69,27 @@ namespace Library
                         FieldType = field.FieldType.GetFriendlyTypeName(),
                         FieldName = field.Name,
                         IsStatic = field.IsStatic,
-                        IsReadOnly = field.IsInitOnly, 
                         Accessibility = field.GetAccessibility()
                     };
+
+                    foreach (var attribute in field.CustomAttributes)
+                    {
+                        var attributeModel = new AttributeModel
+                        {
+                            Name = attribute.AttributeType.Name
+                        };
+
+                        if (attribute.HasConstructorArguments)
+                        {
+                            foreach (var argument in attribute.ConstructorArguments)
+                            {
+                                attributeModel.Arguments.Add(argument.Value.ToString());
+                            }
+                        }
+
+                        fieldModel.Attributes.Add(attributeModel);
+                    }
+
                     typeModel.Fields.Add(fieldModel);
                 }
 
@@ -66,17 +101,32 @@ namespace Library
                         PropertyName = property.Name
                     };
 
-                    // Получаем уровни доступа для get и set методов, а также информацию о статичности
                     var (getAccessibility, setAccessibility, isStatic) = property.GetAccessibility();
 
                     propertyModel.GetAccessibility = getAccessibility;
                     propertyModel.SetAccessibility = setAccessibility;
                     propertyModel.IsStatic = isStatic;
 
-                    // Добавляем свойство в модель типа
+                    foreach (var attribute in property.CustomAttributes)
+                    {
+                        var attributeModel = new AttributeModel
+                        {
+                            Name = attribute.AttributeType.Name
+                        };
+
+                        if (attribute.HasConstructorArguments)
+                        {
+                            foreach (var argument in attribute.ConstructorArguments)
+                            {
+                                attributeModel.Arguments.Add(argument.Value.ToString());
+                            }
+                        }
+
+                        propertyModel.Attributes.Add(attributeModel);
+                    }
+
                     typeModel.Properties.Add(propertyModel);
                 }
-
 
                 foreach (var method in type.Methods)
                 {
@@ -84,15 +134,13 @@ namespace Library
 
                     if (isConstructor)
                     {
-                        // Обработка конструктора
                         var constructorModel = new ConstructorModel
                         {
-                            ConstructorName = type.Name, // Имя конструктора — это имя класса
+                            ConstructorName = type.Name,
                             IsStatic = method.IsStatic,
                             Accessibility = method.GetAccessibility()
                         };
 
-                        // Обработка параметров конструктора
                         foreach (var parameter in method.Parameters)
                         {
                             constructorModel.Parameters.Add(new ParameterModel
@@ -102,17 +150,33 @@ namespace Library
                             });
                         }
 
-                        // Пропускаем пустые конструкторы
                         if (!constructorModel.Parameters.Any() && !method.IsStatic)
                         {
-                            continue; // Пустой нестатический конструктор не добавляем
+                            continue; 
+                        }
+
+                        foreach (var attribute in method.CustomAttributes)
+                        {
+                            var attributeModel = new AttributeModel
+                            {
+                                Name = attribute.AttributeType.Name
+                            };
+
+                            if (attribute.HasConstructorArguments)
+                            {
+                                foreach (var argument in attribute.ConstructorArguments)
+                                {
+                                    attributeModel.Arguments.Add(argument.Value.ToString());
+                                }
+                            }
+
+                            constructorModel.Attributes.Add(attributeModel);
                         }
 
                         typeModel.Constructors.Add(constructorModel);
                     }
                     else
                     {
-                        // Обработка обычных методов
                         var methodModel = new MethodModel
                         {
                             MethodReturnType = method.ReturnType.GetFriendlyTypeName(),
@@ -125,7 +189,6 @@ namespace Library
                             Accessibility = method.GetAccessibility()
                         };
 
-                        // Обработка параметров метода
                         foreach (var parameter in method.Parameters)
                         {
                             methodModel.Parameters.Add(new ParameterModel
@@ -133,6 +196,24 @@ namespace Library
                                 ParameterType = parameter.ParameterType.GetFriendlyTypeName(),
                                 ParameterName = parameter.Name
                             });
+                        }
+
+                        foreach (var attribute in method.CustomAttributes)
+                        {
+                            var attributeModel = new AttributeModel
+                            {
+                                Name = attribute.AttributeType.Name
+                            };
+
+                            if (attribute.HasConstructorArguments)
+                            {
+                                foreach (var argument in attribute.ConstructorArguments)
+                                {
+                                    attributeModel.Arguments.Add(argument.Value.ToString());
+                                }
+                            }
+
+                            methodModel.Attributes.Add(attributeModel);
                         }
 
                         typeModel.Methods.Add(methodModel);
@@ -144,7 +225,6 @@ namespace Library
 
             return assemblyModel;
         }
-
 
         public static string ConvertToText(string path)
         {
