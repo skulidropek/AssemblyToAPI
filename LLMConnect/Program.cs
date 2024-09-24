@@ -70,7 +70,7 @@ var builder = Kernel.CreateBuilder();
 
 #pragma warning disable SKEXP0010 // Suppress the specific warning
 builder.AddOpenAIChatCompletion(
-    modelId: "llama3.1",
+    modelId: "granite-code:8b",
     endpoint: new Uri("http://localhost:11434"),
     apiKey: Environment.GetEnvironmentVariable("OPENAI_API_KEY"));
 #pragma warning restore SKEXP0010 // Restore the warning
@@ -79,8 +79,17 @@ var kernel = builder.Build();
 
 Dictionary<string, (string, HookModel)> resules = new Dictionary<string, (string, HookModel)>();
 
+resules = JsonConvert.DeserializeObject< Dictionary<string, (string, HookModel)> >(File.ReadAllText("hooks.json"));
+
+int index = 0;
 foreach (var model in hookModels)
 {
+	index++;
+	if(resules.ContainsKey(model.Name + model.Parameters))
+	{
+		continue;
+	}
+
     var chatHistory = new ChatHistory();
 
 
@@ -221,199 +230,195 @@ object OnUserApproved(string username, ulong steamId, string ipAddress)
     return null;
 }
 ```");
-    #endregion
+	#endregion
 
-//    #region DataSet CanBeHomingTargeted
+	#region DataSet CanBeHomingTargeted
 
-//    chatHistory.AddUserMessage(@"CanBeHomingTargeted(PlayerHelicopter)
+	chatHistory.AddUserMessage(@"CanBeHomingTargeted(PlayerHelicopter)
 
-//```csharp
-//public override bool IsValidHomingTarget()
-//{
-//	object obj = Interface.CallHook(""CanBeHomingTargeted"", this);
-//	if (obj is bool)
-//	{
-//		return (bool)obj;
-//	}
-//	return IsOn();
-//}
-//```
-//");
+```csharp
+public override bool IsValidHomingTarget()
+{
+	object obj = Interface.CallHook(""CanBeHomingTargeted"", this);
+	if (obj is bool)
+	{
+		return (bool)obj;
+	}
+	return IsOn();
+}
+```
+");
 
-//    chatHistory.AddAssistantMessage(@"
-//```csharp
-///// <summary>
-///// Determines whether the specified player-controlled helicopter can be targeted by homing missiles.
-///// </summary>
-///// <param name=""helicopter"">The player-controlled helicopter to check.</param>
-///// <returns>
-///// Returns `true` if the helicopter can be targeted by homing missiles; otherwise, returns `false`.
-///// If the method returns `null`, the default game logic will be used to determine if the helicopter can be targeted.
-///// </returns>
-//bool? CanBeHomingTargeted(PlayerHelicopter helicopter)
-//{
-//    Puts($""Checking homing target for Helicopter ID: {helicopter.net.ID}, Position: {helicopter.transform.position}, OwnerID: {helicopter.OwnerID}"");
-//    return true;
-//}
-//```");
-//	#endregion
+	chatHistory.AddAssistantMessage(@"
+```csharp
+/// <summary>
+/// Determines whether the specified player-controlled helicopter can be targeted by homing missiles.
+/// </summary>
+/// <param name=""helicopter"">The player-controlled helicopter to check.</param>
+/// <returns>
+/// Returns `true` if the helicopter can be targeted by homing missiles; otherwise, returns `false`.
+/// If the method returns `null`, the default game logic will be used to determine if the helicopter can be targeted.
+/// </returns>
+bool? CanBeHomingTargeted(PlayerHelicopter helicopter)
+{
+    Puts($""Checking homing target for Helicopter ID: {helicopter.net.ID}, Position: {helicopter.transform.position}, OwnerID: {helicopter.OwnerID}"");
+    return true;
+}
+```");
+	#endregion
 
-//	#region DataSet OnItemCraftFinished
+	#region DataSet OnItemCraftFinished
 
-//	chatHistory.AddUserMessage(@"OnItemCraftFinished(ItemCraftTask,Item,ItemCrafter)
+	chatHistory.AddUserMessage(@"OnItemCraftFinished(ItemCraftTask,Item,ItemCrafter)
 
-//```csharp
-//public void FinishCrafting(ItemCraftTask task)
-//	{
-//		task.amount--;
-//		task.numCrafted++;
-//		ulong skin = ItemDefinition.FindSkin(task.blueprint.targetItem.itemid, task.skinID);
-//		Item item = ItemManager.CreateByItemID(task.blueprint.targetItem.itemid, 1, skin);
-//		item.amount = task.blueprint.amountToCreate;
-//		int amount = item.amount;
-//		_ = owner.currentCraftLevel;
-//		bool inSafezone = owner.InSafeZone();
-//		if (item.hasCondition && task.conditionScale != 1f)
-//		{
-//			item.maxCondition *= task.conditionScale;
-//			item.condition = item.maxCondition;
-//		}
-//		item.OnVirginSpawn();
-//		foreach (ItemAmount ingredient in task.blueprint.ingredients)
-//		{
-//			int num = (int)ingredient.amount;
-//			if (task.takenItems == null)
-//			{
-//				continue;
-//			}
-//			foreach (Item takenItem in task.takenItems)
-//			{
-//				if (takenItem.info == ingredient.itemDef)
-//				{
-//					int num2 = Mathf.Min(takenItem.amount, num);
-//					Facepunch.Rust.Analytics.Azure.OnCraftMaterialConsumed(takenItem.info.shortname, num, base.baseEntity, task.workbenchEntity, inSafezone, item.info.shortname);
-//					takenItem.UseItem(num);
-//					num -= num2;
-//				}
-//				_ = 0;
-//			}
-//		}
-//		Facepunch.Rust.Analytics.Server.Crafting(task.blueprint.targetItem.shortname, task.skinID);
-//		Facepunch.Rust.Analytics.Azure.OnCraftItem(item.info.shortname, item.amount, base.baseEntity, task.workbenchEntity, inSafezone);
-//		owner.Command(""note.craft_done"", task.taskUID, 1, task.amount);
-//		Interface.CallHook(""OnItemCraftFinished"", task, item, this);
-//		if (task.instanceData != null)
-//		{
-//			item.instanceData = task.instanceData;
-//		}
-//		if (!string.IsNullOrEmpty(task.blueprint.UnlockAchievment))
-//		{
-//			owner.GiveAchievement(task.blueprint.UnlockAchievment);
-//		}
-//		owner.ProcessMissionEvent(BaseMission.MissionEventType.CRAFT_ITEM, item.info.itemid, amount);
-//		if (owner.inventory.GiveItem(item))
-//		{
-//			owner.Command(""note.inv"", item.info.itemid, amount);
-//			return;
-//		}
-//		ItemContainer itemContainer = containers.First();
-//		owner.Command(""note.inv"", item.info.itemid, amount);
-//		owner.Command(""note.inv"", item.info.itemid, -item.amount);
-//		item.Drop(itemContainer.dropPosition, itemContainer.dropVelocity);
-//	}
-//```");
+```csharp
+public void FinishCrafting(ItemCraftTask task)
+	{
+		task.amount--;
+		task.numCrafted++;
+		ulong skin = ItemDefinition.FindSkin(task.blueprint.targetItem.itemid, task.skinID);
+		Item item = ItemManager.CreateByItemID(task.blueprint.targetItem.itemid, 1, skin);
+		item.amount = task.blueprint.amountToCreate;
+		int amount = item.amount;
+		_ = owner.currentCraftLevel;
+		bool inSafezone = owner.InSafeZone();
+		if (item.hasCondition && task.conditionScale != 1f)
+		{
+			item.maxCondition *= task.conditionScale;
+			item.condition = item.maxCondition;
+		}
+		item.OnVirginSpawn();
+		foreach (ItemAmount ingredient in task.blueprint.ingredients)
+		{
+			int num = (int)ingredient.amount;
+			if (task.takenItems == null)
+			{
+				continue;
+			}
+			foreach (Item takenItem in task.takenItems)
+			{
+				if (takenItem.info == ingredient.itemDef)
+				{
+					int num2 = Mathf.Min(takenItem.amount, num);
+					Facepunch.Rust.Analytics.Azure.OnCraftMaterialConsumed(takenItem.info.shortname, num, base.baseEntity, task.workbenchEntity, inSafezone, item.info.shortname);
+					takenItem.UseItem(num);
+					num -= num2;
+				}
+				_ = 0;
+			}
+		}
+		Facepunch.Rust.Analytics.Server.Crafting(task.blueprint.targetItem.shortname, task.skinID);
+		Facepunch.Rust.Analytics.Azure.OnCraftItem(item.info.shortname, item.amount, base.baseEntity, task.workbenchEntity, inSafezone);
+		owner.Command(""note.craft_done"", task.taskUID, 1, task.amount);
+		Interface.CallHook(""OnItemCraftFinished"", task, item, this);
+		if (task.instanceData != null)
+		{
+			item.instanceData = task.instanceData;
+		}
+		if (!string.IsNullOrEmpty(task.blueprint.UnlockAchievment))
+		{
+			owner.GiveAchievement(task.blueprint.UnlockAchievment);
+		}
+		owner.ProcessMissionEvent(BaseMission.MissionEventType.CRAFT_ITEM, item.info.itemid, amount);
+		if (owner.inventory.GiveItem(item))
+		{
+			owner.Command(""note.inv"", item.info.itemid, amount);
+			return;
+		}
+		ItemContainer itemContainer = containers.First();
+		owner.Command(""note.inv"", item.info.itemid, amount);
+		owner.Command(""note.inv"", item.info.itemid, -item.amount);
+		item.Drop(itemContainer.dropPosition, itemContainer.dropVelocity);
+	}
+```");
 
-//	chatHistory.AddAssistantMessage(@"```csharp
-///// <summary>
-///// Called when an item crafting task is finished.
-///// </summary>
-///// <param name=""task"">The item crafting task that has been completed.</param>
-///// <param name=""item"">The item that was crafted.</param>
-///// <param name=""craftingStation"">The entity or station that performed the crafting.</param>
-///// <returns>No return behavior.</returns>
-//void OnItemCraftFinished(ItemCraftTask task, Item item, ItemCrafter craftingStation)
-//{
-//    Puts($""Item crafting finished: {item.info.displayName.english} (Shortname: {item.info.shortname}) "" +
-//         $""crafted at station: {craftingStation?.gameObject.name ?? ""Player inventory""}."");
+	chatHistory.AddAssistantMessage(@"```csharp
+/// <summary>
+/// Called when an item crafting task is finished.
+/// </summary>
+/// <param name=""task"">The item crafting task that has been completed.</param>
+/// <param name=""item"">The item that was crafted.</param>
+/// <param name=""craftingStation"">The entity or station that performed the crafting.</param>
+/// <returns>No return behavior.</returns>
+void OnItemCraftFinished(ItemCraftTask task, Item item, ItemCrafter craftingStation)
+{
+    Puts($""Item crafting finished: {item.info.displayName.english} (Shortname: {item.info.shortname}) "" +
+         $""crafted at station: {craftingStation?.gameObject.name ?? ""Player inventory""}."");
 
-//    if (item.info.shortname == ""explosive.timed"")
-//    {
-//        Puts(""A timed explosive has been crafted! Watch out!"");
-//    }
-//}
-//```");
+    if (item.info.shortname == ""explosive.timed"")
+    {
+        Puts(""A timed explosive has been crafted! Watch out!"");
+    }
+}
+```");
 
-//	#endregion
+	#endregion
 
-//	#region DataSet CanAffordToPlace
-//	chatHistory.AddUserMessage(@"CanAffordToPlace(BasePlayer,Construction)
+	#region DataSet CanAffordToPlace
+	chatHistory.AddUserMessage(@"CanAffordToPlace(BasePlayer,Construction)
 
-//public bool CanAffordToPlace(Construction component)
-//{
-//	if (isTypeDeployable)
-//	{
-//		return true;
-//	}
-//	BasePlayer ownerPlayer = GetOwnerPlayer();
-//	if (!ownerPlayer)
-//	{
-//		return false;
-//	}
-//	object obj = Interface.CallHook(""CanAffordToPlace"", ownerPlayer, this, component);
-//	if (obj is bool)
-//	{
-//		return (bool)obj;
-//	}
-//	if (ownerPlayer.IsInCreativeMode && Creative.freeBuild)
-//	{
-//		return true;
-//	}
-//	foreach (ItemAmount item in component.defaultGrade.CostToBuild())
-//	{
-//		if ((float)ownerPlayer.inventory.GetAmount(item.itemDef.itemid) < item.amount)
-//		{
-//			return false;
-//		}
-//	}
-//	return true;
-//}
-//");
-//	chatHistory.AddAssistantMessage(@"```csharp
-///// <summary>
-///// Called to determine if a player can afford to place a construction.
-///// </summary>
-///// <param name=""player"">The player attempting to place the construction.</param>
-///// <param name=""construction"">The construction being placed.</param>
-///// <returns>
-///// Returns `true` if the player can afford to place the construction, or `false` if they cannot.
-///// If the method returns `null`, the default game logic will determine if the player can afford the placement.
-///// </returns>
-//bool? CanAffordToPlace(BasePlayer player, Construction construction)
-//{
-//    // Выводим информацию о попытке размещения конструкции в консоль
-//    Puts($""Player {player.displayName} (ID: {player.UserIDString}) is attempting to place a {construction.fullName}."");
+public bool CanAffordToPlace(Construction component)
+{
+	if (isTypeDeployable)
+	{
+		return true;
+	}
+	BasePlayer ownerPlayer = GetOwnerPlayer();
+	if (!ownerPlayer)
+	{
+		return false;
+	}
+	object obj = Interface.CallHook(""CanAffordToPlace"", ownerPlayer, this, component);
+	if (obj is bool)
+	{
+		return (bool)obj;
+	}
+	if (ownerPlayer.IsInCreativeMode && Creative.freeBuild)
+	{
+		return true;
+	}
+	foreach (ItemAmount item in component.defaultGrade.CostToBuild())
+	{
+		if ((float)ownerPlayer.inventory.GetAmount(item.itemDef.itemid) < item.amount)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+");
+	chatHistory.AddAssistantMessage(@"```csharp
+/// <summary>
+/// Called to determine if a player can afford to place a construction.
+/// </summary>
+/// <param name=""player"">The player attempting to place the construction.</param>
+/// <param name=""construction"">The construction being placed.</param>
+/// <returns>
+/// Returns `true` if the player can afford to place the construction, or `false` if they cannot.
+/// If the method returns `null`, the default game logic will determine if the player can afford the placement.
+/// </returns>
+bool? CanAffordToPlace(BasePlayer player, Construction construction)
+{
+    Puts($""Player {player.displayName} (ID: {player.UserIDString}) is attempting to place a {construction.fullName}."");
 
-//    // Пример: Запрещаем игрокам размещать высокие каменные стены
-//    if (construction.fullName == ""wall.external.high.stone"")
-//    {
-//        Puts($""Player {player.displayName} is not allowed to place a high stone wall."");
-//        return false; // Блокируем размещение
-//    }
+    if (construction.fullName == ""wall.external.high.stone"")
+    {
+        Puts($""Player {player.displayName} is not allowed to place a high stone wall."");
+        return false;
+    }
 
-//    // Пример: Если игрок в креативном режиме, разрешаем ему размещать без проверки ресурсов
-//    if (player.IsInCreativeMode)
-//    {
-//        Puts($""Player {player.displayName} is in creative mode and can place constructions without resource checks."");
-//        return true; // Разрешаем размещение
-//    }
+    if (player.IsInCreativeMode)
+    {
+        Puts($""Player {player.displayName} is in creative mode and can place constructions without resource checks."");
+        return true;
+    }
 
-//    // Если ни одно из условий не выполнено, используем дефолтное поведение
-//    return null;
-//}
-//```");
-//    #endregion
+    return null;
+}
+```");
+	#endregion
 
-    chatHistory.AddUserMessage($@" 
+	chatHistory.AddUserMessage($@" 
 {model.Name + model.Parameters}
 
 ```csharp
@@ -436,7 +441,7 @@ object OnUserApproved(string username, ulong steamId, string ipAddress)
 		},
         kernel: kernel);
 
-    Console.WriteLine($"\n-------------------{model.Name + model.Parameters}-----------------------\n" + result.Result);
+    Console.WriteLine($"\n[{index}/{hookModels.Count}]-------------------{model.Name + model.Parameters}-----------------------\n" + result.Result);
     resules.TryAdd(model.Name + model.Parameters, (result.Result.ToString(), model));
     File.WriteAllText("hooks.json", JsonConvert.SerializeObject(resules));
     //File.WriteAllText("hooks.md", ConvertJsonToMarkdown(resules));
