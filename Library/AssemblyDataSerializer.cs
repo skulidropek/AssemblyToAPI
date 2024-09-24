@@ -39,12 +39,12 @@ namespace Library
                     ClassName = type.FullName,
                     InheritsFrom = type.BaseType != null ? type.BaseType.GetFriendlyTypeName() : null,
                     Accessibility = type.GetAccessibility(),
-                    IsAbstract = type.IsAbstract,
-                    IsSealed = type.IsSealed,
-                    IsStatic = type.IsAbstract && type.IsSealed // В C# статический класс это абстрактный + запечатанный
+                    IsAbstract = type.IsAbstract && !type.IsInterface && !type.IsEnum,  
+                    IsStatic = type.IsAbstract && type.IsSealed && !type.IsInterface && !type.IsEnum,
+                    IsInterface = type.IsInterface,  
+                    IsEnum = type.IsEnum 
                 };
 
-                // Обрабатываем поля
                 foreach (var field in type.Fields)
                 {
                     var fieldModel = new FieldModel
@@ -52,14 +52,12 @@ namespace Library
                         FieldType = field.FieldType.GetFriendlyTypeName(),
                         FieldName = field.Name,
                         IsStatic = field.IsStatic,
-                        IsReadOnly = field.IsInitOnly, // readonly поле
+                        IsReadOnly = field.IsInitOnly, 
                         Accessibility = field.GetAccessibility()
                     };
                     typeModel.Fields.Add(fieldModel);
                 }
 
-                // Обрабатываем свойства
-                // Обрабатываем свойства
                 foreach (var property in type.Properties)
                 {
                     var propertyModel = new PropertyModel
@@ -80,7 +78,6 @@ namespace Library
                 }
 
 
-                // Обрабатываем методы
                 foreach (var method in type.Methods)
                 {
                     var isConstructor = method.Name == ".ctor" || method.Name == ".cctor";

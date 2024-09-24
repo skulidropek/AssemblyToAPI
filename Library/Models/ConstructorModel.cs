@@ -10,7 +10,7 @@ namespace Library.Models
     public class ConstructorModel
     {
         public string ConstructorName { get; set; }
-        public TypeAccessibilityLevel Accessibility { get; set; }
+        public MemberAccessibilityLevel Accessibility { get; set; }
         public List<ParameterModel> Parameters { get; set; } = new List<ParameterModel>();
         public bool IsStatic { get; set; }
 
