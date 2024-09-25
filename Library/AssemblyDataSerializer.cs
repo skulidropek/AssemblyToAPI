@@ -42,7 +42,13 @@ namespace Library
                 AssemblyResolver = resolver
             };
 
-            var assemblyDefinition = AssemblyDefinition.ReadAssembly(path, readerParameters);
+            using var assemblyDefinition = AssemblyDefinition.ReadAssembly(path, readerParameters);
+            
+            if(assemblyDefinition == null)
+            {
+                return null;
+            }
+
             var assemblyModel = new AssemblyModel();
 
             foreach (var type in assemblyDefinition.MainModule.Types.Where(s => !s.FullName.Contains("<>") && !s.FullName.Contains("<Module>")))
@@ -65,12 +71,19 @@ namespace Library
                         Name = attribute.AttributeType.Name
                     };
 
-                    if (attribute.HasConstructorArguments)
+                    try
                     {
-                        foreach (var argument in attribute.ConstructorArguments)
+                        if (attribute?.HasConstructorArguments ?? false)
                         {
-                            attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
+                            foreach (var argument in attribute.ConstructorArguments)
+                            {
+                                attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
+                            }
                         }
+                    }
+                    catch
+                    {
+
                     }
 
                     typeModel.Attributes.Add(attributeModel);
@@ -93,12 +106,19 @@ namespace Library
                             Name = attribute.AttributeType.Name
                         };
 
-                        if (attribute.HasConstructorArguments)
+                        try
                         {
-                            foreach (var argument in attribute.ConstructorArguments)
+                            if (attribute?.HasConstructorArguments ?? false)
                             {
-                                attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
+                                foreach (var argument in attribute.ConstructorArguments)
+                                {
+                                    attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
+                                }
                             }
+                        }
+                        catch
+                        {
+
                         }
 
                         fieldModel.Attributes.Add(attributeModel);
@@ -128,13 +148,20 @@ namespace Library
                             Name = attribute.AttributeType.Name
                         };
 
-                        if (attribute.HasConstructorArguments)
+                        try
                         {
-                            foreach (var argument in attribute.ConstructorArguments)
+                            if (attribute?.HasConstructorArguments ?? false)
                             {
-                                attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
+                                foreach (var argument in attribute.ConstructorArguments)
+                                {
+                                    attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
+                                }
                             }
                         }
+                        catch (Exception ex)
+                        {
+                        }
+                      
 
                         propertyModel.Attributes.Add(attributeModel);
                     }
@@ -176,14 +203,21 @@ namespace Library
                                 Name = attribute.AttributeType.Name
                             };
 
-                            if (attribute.HasConstructorArguments)
+                            try
                             {
-                                foreach (var argument in attribute.ConstructorArguments)
+                                if (attribute?.HasConstructorArguments ?? false)
                                 {
-                                    attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
+                                    foreach (var argument in attribute.ConstructorArguments)
+                                    {
+                                        attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
+                                    }
                                 }
                             }
+                            catch
+                            {
 
+                            }
+                            
                             constructorModel.Attributes.Add(attributeModel);
                         }
 
@@ -219,12 +253,19 @@ namespace Library
                                 Name = attribute.AttributeType.Name
                             };
 
-                            if (attribute.HasConstructorArguments)
+                            try
                             {
-                                foreach (var argument in attribute.ConstructorArguments)
+                                if (attribute?.HasConstructorArguments ?? false)
                                 {
-                                    attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
+                                    foreach (var argument in attribute.ConstructorArguments)
+                                    {
+                                        attributeModel.Arguments.Add(argument.Value?.ToString() ?? "");
+                                    }
                                 }
+                            }
+                            catch
+                            {
+
                             }
 
                             methodModel.Attributes.Add(attributeModel);
