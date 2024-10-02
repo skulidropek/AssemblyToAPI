@@ -9,7 +9,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Library", "Library\Library.
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LLMConnect", "LLMConnect\LLMConnect.csproj", "{AD2FE969-B4F0-4C56-BFF6-4B5146F29636}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConsoleAssemblyToApi", "ConsoleAssemblyToApi\ConsoleAssemblyToApi.csproj", "{F54DE7C0-FA3F-4B49-B28F-10077B91E578}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleAssemblyToApi", "ConsoleAssemblyToApi\ConsoleAssemblyToApi.csproj", "{F54DE7C0-FA3F-4B49-B28F-10077B91E578}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AllNugetDownload", "AllNugetDownload\AllNugetDownload.csproj", "{F9BB0B9D-FD60-4133-B047-D4CA2CE1929A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,6 +35,10 @@ Global
 		{F54DE7C0-FA3F-4B49-B28F-10077B91E578}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F54DE7C0-FA3F-4B49-B28F-10077B91E578}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F54DE7C0-FA3F-4B49-B28F-10077B91E578}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F9BB0B9D-FD60-4133-B047-D4CA2CE1929A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F9BB0B9D-FD60-4133-B047-D4CA2CE1929A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F9BB0B9D-FD60-4133-B047-D4CA2CE1929A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F9BB0B9D-FD60-4133-B047-D4CA2CE1929A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
