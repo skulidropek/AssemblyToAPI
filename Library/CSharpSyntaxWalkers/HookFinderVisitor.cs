@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Library.Extensions;
 using Library.Models;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -59,11 +60,29 @@ namespace Library
 
                         if (method != null)
                         {
+                            var methodParameters = new List<ParameterModel>();
+                            foreach (var parameter in method.ParameterList.Parameters)
+                            {
+                                var type = parameter.Type?.GetFriendlyTypeName() ?? "";
+
+                                if (string.IsNullOrEmpty(type))
+                                {
+                                    continue;
+                                }
+
+                                methodParameters.Add(new ParameterModel
+                                {
+                                    ParameterType = type, // Преобразуем TypeSyntax в строку
+                                    ParameterName = parameter.Identifier.Text    // Используем Identifier для имени параметра
+                                });
+                            }
+
                             Hooks.Add(hash, new HookModel()
                             {
-                                MethodName = method.Identifier.Text,
-                                Name = hookName.Replace("\"", ""),
-                                Parameters = "(" + string.Join(',', parameters) + ")",
+                                MethodParameters = methodParameters, // Присваиваем список параметров
+                                MethodName = method.Identifier.Text, // Используем Identifier для имени метода
+                                HookName = hookName.Replace("\"", ""),
+                                HookParameters = "(" + string.Join(',', parameters) + ")",
                                 MethodCode = method.ToFullString(),
                             });
                         }

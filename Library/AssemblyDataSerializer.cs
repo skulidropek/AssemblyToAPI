@@ -278,6 +278,35 @@ namespace Library
                 assemblyModel.Types.Add(typeModel);
             }
 
+            var hooks = FindHooksDictionary(path);
+
+            if (hooks.Count > 0)
+            {
+                foreach (var type in assemblyModel.Types)
+                {
+                    for (int i = 0; i < type.Methods.Count; i++)
+                    {
+                        var method = type.Methods[i];
+                        var className = type.ClassName.Split('.').Last();
+                        var findHooks = hooks
+                            .Where(s => s.Value.MethodName == method.MethodName && s.Value.ClassName == className)
+                            .Where(s => s.Value.MethodParameters.Count == method.Parameters.Count &&
+                                        s.Value.MethodParameters
+                                            .Zip(method.Parameters, (param1, param2) =>
+                                                param1.ParameterType == param2.ParameterType &&
+                                                param1.ParameterName == param2.ParameterName)
+                                            .All(match => match))
+                            .Select(s => s.Value)
+                            .ToList();
+
+                        if (findHooks.Count > 0)
+                        {
+                            type.Methods[i] = new RustMethodModel(type.Methods[i], findHooks); 
+                        }
+                    }
+                }
+            }
+
             return assemblyModel;
         }
 

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Mono.Cecil;
 
 namespace Library.Extensions
@@ -38,6 +39,33 @@ namespace Library.Extensions
                     }
 
                     return type.Name;
+            }
+        }
+
+        public static string GetFriendlyTypeName(this TypeSyntax type)
+        {
+            string typeName = type.ToString();
+
+            switch (typeName)
+            {
+                case "void": return "void";
+                case "int": return "int";
+                case "float": return "float";
+                case "double": return "double";
+                case "decimal": return "decimal";
+                case "bool": return "bool";
+                case "char": return "char";
+                case "byte": return "byte";
+                case "sbyte": return "sbyte";
+                case "short": return "short";
+                case "ushort": return "ushort";
+                case "long": return "long";
+                case "ulong": return "ulong";
+                case "string": return "string";
+                case "object": return "object";
+                default:
+                    // Здесь можно добавить логику для обработки обобщенных типов, если нужно.
+                    return typeName;
             }
         }
     }
