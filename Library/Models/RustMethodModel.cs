@@ -52,7 +52,11 @@ namespace Library.Models
                 ? string.Join(System.Environment.NewLine, Attributes.Select(attr => attr.ToString())) + System.Environment.NewLine
                 : string.Empty;
 
-            return hook.MethodCode;
+            return @$"
+/// <summary>
+/// Hooks - {string.Join(',', Hooks.Select(s => s.HookName + s.HookParameters))}
+/// </summary>
+" + hook.MethodCode;
         }
     }
 }
