@@ -61,6 +61,7 @@ namespace Library
                         {
                             Hooks.Add(hash, new HookModel()
                             {
+                                MethodName = method.Identifier.Text,
                                 Name = hookName.Replace("\"", ""),
                                 Parameters = "(" + string.Join(',', parameters) + ")",
                                 MethodCode = method.ToFullString(),
