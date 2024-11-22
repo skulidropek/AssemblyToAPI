@@ -174,6 +174,14 @@ class Program
         // Обработка старых хуков (удалённые или изменённые)
         foreach (var oldHook in oldDevHooks)
         {
+            var haveHook = lastDevHooks.Values.Any(newHook => newHook.HookName == oldHook.Value.HookName && newHook.HookParameters == oldHook.Value.HookParameters);
+
+            if (haveHook)
+            {
+                Console.WriteLine("Хук уже есть на новой версии дева " + oldHook.Value.HookName + oldHook.Value.HookParameters);
+                continue;
+            }
+
             var matchingHook = lastDevHooks.Values.FirstOrDefault(newHook =>
                 newHook.HookName == oldHook.Value.HookName);
 
