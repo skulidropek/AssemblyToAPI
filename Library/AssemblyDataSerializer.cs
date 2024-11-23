@@ -65,7 +65,7 @@ namespace Library
                     IsEnum = type.IsEnum
                 };
 
-                foreach (var attribute in type.CustomAttributes)
+                foreach (var attribute in type.CustomAttributes.OrderBy(s => s.AttributeType.Name))
                 {
                     var attributeModel = new AttributeModel
                     {
@@ -100,7 +100,7 @@ namespace Library
                         Accessibility = field.GetAccessibility()
                     };
 
-                    foreach (var attribute in field.CustomAttributes)
+                    foreach (var attribute in field.CustomAttributes.OrderBy(s => s.AttributeType.Name))
                     {
                         var attributeModel = new AttributeModel
                         {
@@ -142,7 +142,7 @@ namespace Library
                     propertyModel.SetAccessibility = setAccessibility;
                     propertyModel.IsStatic = isStatic;
 
-                    foreach (var attribute in property.CustomAttributes)
+                    foreach (var attribute in property.CustomAttributes.OrderBy(s => s.AttributeType.Name))
                     {
                         var attributeModel = new AttributeModel
                         {
@@ -197,7 +197,7 @@ namespace Library
                             continue; 
                         }
 
-                        foreach (var attribute in method.CustomAttributes)
+                        foreach (var attribute in method.CustomAttributes.OrderBy(s => s.AttributeType.Name))
                         {
                             var attributeModel = new AttributeModel
                             {
@@ -247,7 +247,7 @@ namespace Library
                             });
                         }
 
-                        foreach (var attribute in method.CustomAttributes)
+                        foreach (var attribute in method.CustomAttributes.OrderBy(s => s.AttributeType.Name))
                         {
                             var attributeModel = new AttributeModel
                             {
