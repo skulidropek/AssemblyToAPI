@@ -383,7 +383,7 @@ namespace Library
                                             var argInstruction = method.Body.Instructions[j];
                                             if (argIndex == 0) // Первый аргумент - имя хука
                                             {
-                                                hookName = argInstruction.Operand?.ToString();
+                                                hookName = (argInstruction.Operand ?? argInstruction.Previous.Operand).ToString();
                                             }
                                             else // Остальные аргументы
                                             {
