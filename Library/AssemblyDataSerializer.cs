@@ -15,6 +15,7 @@ using System.IO;
 using System.Reflection;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 using System.Text.RegularExpressions;
 
 namespace Library
@@ -383,7 +384,18 @@ namespace Library
                                             var argInstruction = method.Body.Instructions[j];
                                             if (argIndex == 0) // Первый аргумент - имя хука
                                             {
-                                                hookName = (argInstruction.Operand ?? argInstruction.Previous.Operand).ToString();
+                                                if (argInstruction.Operand != null)
+                                                {
+                                                    hookName = argInstruction.Operand.ToString();
+                                                }
+                                                else if (argInstruction?.Previous?.Operand != null)
+                                                {
+                                                    hookName = argInstruction.Previous.Operand.ToString();
+                                                }
+                                                else if(argInstruction?.Next?.Operand != null)
+                                                {
+                                                    hookName = argInstruction.Next.Operand.ToString();
+                                                }
                                             }
                                             else // Остальные аргументы
                                             {
