@@ -366,41 +366,51 @@ namespace Library
                             for (int i = 0; i < method.Body.Instructions.Count; i++)
                             {
                                 var instruction = method.Body.Instructions[i];
+
                                 if (instruction.OpCode == OpCodes.Call || instruction.OpCode == OpCodes.Callvirt)
                                 {
                                     var methodReference = instruction.Operand as MethodReference;
+
                                     if (methodReference != null && IsHookMethod(methodReference))
                                     {
                                         string hookName = null;
                                         var parameters = new List<string>();
 
-                                        // Пройти назад по инструкциям и собрать аргументы
-                                        int argCount = methodReference.Parameters.Count;
-                                        for (int j = i - argCount, argIndex = 0; j < i; j++, argIndex++)
+                                        // Ищем имя хука в предыдущих инструкциях
+                                        for (int j = i - 1; j >= 0 && j >= i - 10; j--)
                                         {
-                                            if (j < 0 || j >= method.Body.Instructions.Count)
-                                                continue; // Защита от выхода за пределы
+                                            var prevInstruction = method.Body.Instructions[j];
 
-                                            var argInstruction = method.Body.Instructions[j];
-                                            if (argIndex == 0) // Первый аргумент - имя хука
+                                            if (prevInstruction.OpCode == OpCodes.Ldstr)
                                             {
-                                                if (argInstruction.Operand != null)
-                                                {
-                                                    hookName = argInstruction.Operand.ToString();
-                                                }
-                                                else if (argInstruction?.Previous?.Operand != null)
-                                                {
-                                                    hookName = argInstruction.Previous.Operand.ToString();
-                                                }
-                                                else if(argInstruction?.Next?.Operand != null)
-                                                {
-                                                    hookName = argInstruction.Next.Operand.ToString();
-                                                }
+                                                hookName = prevInstruction.Operand?.ToString();
+                                                break;
                                             }
-                                            else // Остальные аргументы
+                                        }
+
+                                        // Если не нашли через Ldstr, проверяем аргументы метода
+                                        if (string.IsNullOrEmpty(hookName))
+                                        {
+                                            int argCount = methodReference.Parameters.Count;
+                                            for (int j = i - argCount, argIndex = 0; j < i; j++, argIndex++)
                                             {
-                                                var paramType = argInstruction.Operand as TypeReference;
-                                                parameters.Add(paramType?.Name ?? "unknown");
+                                                if (j < 0 || j >= method.Body.Instructions.Count)
+                                                    continue;
+
+                                                var argInstruction = method.Body.Instructions[j];
+
+                                                if (argIndex == 0) // Первый аргумент - имя хука
+                                                {
+                                                    if (argInstruction.Operand != null)
+                                                    {
+                                                        hookName = argInstruction.Operand.ToString();
+                                                    }
+                                                }
+                                                else // Остальные аргументы
+                                                {
+                                                    var paramType = argInstruction.Operand as TypeReference;
+                                                    parameters.Add(paramType?.Name ?? "unknown");
+                                                }
                                             }
                                         }
 
@@ -467,9 +477,7 @@ namespace Library
 
         private static bool IsHookMethod(MethodReference method)
         {
-            // Реализуйте логику для определения, является ли метод хуком
-            // Например, проверка по имени метода или другим характеристикам
-            return method.Name.Contains("CallHook"); // Пример условия
+            return method.Name.Contains("Call");
         }
     }
 }
